@@ -15,6 +15,7 @@ import { workshopStuffings, workshopBuilds } from '../src/config/workshop.js';
 import { Weapon } from '../src/weapons/weapon.js';
 import { legacySounds } from './auditionLegacy.js';
 import { gunSounds as gunSoundsTable } from '../src/config/gunSounds.js';
+import { mountSpatialAudition } from './auditionSpatial.js';
 // The new engine's table (a page-only recipe can be added here to compare by ear, as the punch takes were).
 const newTable = { ...audio.sounds };
 
@@ -173,6 +174,11 @@ for (const def of Object.values(weapons)) {
   const r2 = row(c, 'Reference: what the guns must not bury');
   for (const name of ['walkerSqueak', 'mannequinStep', 'cartSqueak']) button(r2, name, () => play(name, { volume: 0.5 }));
 }
+
+// The 3D zombie sound card (tools/auditionSpatial.js): always through the new engine, whatever the Old/New toggle says.
+const ensureSpatial = () => { if (!ctx) start(); return { ctx, engine: engines.new }; };
+ensureSpatial.started = () => !!ctx;
+mountSpatialAudition({ ensure: ensureSpatial, mount: $('cards') });
 
 // Header controls.
 for (const id of Object.keys(workshopStuffings)) $('stuffing').insertAdjacentHTML('beforeend', `<option value="${id}">${id}</option>`);
@@ -403,4 +409,4 @@ async function cost() {
   return { silent: (await render(null, { seconds: 3.6, schedule: () => {} })).ms, plainNoRoom: await run(null, null, false), plainAtrium: await run('atrium', null, false),
     fullNoRoom: await run(null, full, true), fullAtrium: await run('atrium', full, true) };
 }
-window.__audition = { measure, calibrate, level, cost, render, analyse, play, simulateFire, simulateReload, get voices() { return engines?.new.voiceCount ?? 0; }, get ctx() { return ctx; } };
+window.__audition = { measure, calibrate, level, cost, render, analyse, play, simulateFire, simulateReload, get voices() { return engines?.new.voiceCount ?? 0; }, get ctx() { return ctx; }, get engine() { return engines?.new ?? null; } };

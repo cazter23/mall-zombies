@@ -451,12 +451,17 @@ export const audio = {
     mannequinStep: { volume: .3, layers: [
       { type: 'noise', filter: 'highpass', freq: 1200, gain: .25, attack: .002, decay: .035 },
       { type: 'tone', wave: 'sine', freq: 260, freqEnd: 150, gain: .35, attack: .002, decay: .055 },
+      // (the creak of a plastic joint: a slow, rough FM wobble)
+      { type: 'fm', wave: 'triangle', freq: 430, freqEnd: 380, ratio: 0.11, index: 6, indexEnd: 2, gain: .14, attack: .02, decay: .16, delay: .02 },
     ] },
     cartSqueak: {
       volume: 0.35,
       layers: [
         { type: 'tone', wave: 'sawtooth', freq: 2300, freqEnd: 1900, gain: 0.18, attack: 0.01, decay: 0.12 },
         { type: 'tone', wave: 'sine', freq: 3100, freqEnd: 2700, gain: 0.25, attack: 0.01, decay: 0.1 },
+        // (the wire basket and what's in it rattling over the tiles)
+        { type: 'noise', filter: 'bandpass', freq: 2900, q: 3, gain: 0.16, attack: 0.002, decay: 0.035, delay: 0.05 },
+        { type: 'noise', filter: 'bandpass', freq: 3400, q: 3, gain: 0.12, attack: 0.002, decay: 0.03, delay: 0.13 },
       ],
     },
     // ...the WARNING before a charge: the wire basket rattling hard and a long rising wheel squeal...
@@ -470,6 +475,10 @@ export const audio = {
         { type: 'noise', filter: 'bandpass', freq: 3300, q: 2.5, gain: 0.45, attack: 0.005, decay: 0.05, delay: 0.36 },
         { type: 'noise', filter: 'bandpass', freq: 2900, q: 2.5, gain: 0.45, attack: 0.005, decay: 0.05, delay: 0.45 },
         { type: 'tone', wave: 'sawtooth', freq: 1500, freqEnd: 2900, gain: 0.16, attack: 0.15, decay: 0.75 },
+        // BEEP. BEEP. BEEP. (a forklift backing up: the store's own warning that something is coming down the aisle)
+        { type: 'tone', wave: 'square', freq: 1040, gain: 0.13, attack: 0.004, decay: 0.13, delay: 0.02 },
+        { type: 'tone', wave: 'square', freq: 1040, gain: 0.13, attack: 0.004, decay: 0.13, delay: 0.32 },
+        { type: 'tone', wave: 'square', freq: 1040, gain: 0.13, attack: 0.004, decay: 0.13, delay: 0.62 },
       ],
     },
     // ...and a metal CRASH when it misses and hits something.
@@ -507,6 +516,74 @@ export const audio = {
         { type: 'noise', filter: 'lowpass', freq: 360, gain: 0.47, attack: 0.008, decay: 0.16, delay: 0.68 },
       ],
     },
+    // A Mascot coming your way: a clown-car bicycle horn, twice ("HONK HONK"), every few seconds while its helmet is on.
+    mascotHonk: { volume: 0.5, pitchVariation: 0.06, layers: [
+      { type: 'fm', wave: 'square', freq: 392, freqEnd: 370, ratio: 1.01, index: 1.4, indexEnd: 0.4, gain: 0.25, attack: 0.01, decay: 0.26 },
+      { type: 'tone', wave: 'sine', freq: 196, gain: 0.2, attack: 0.01, decay: 0.24 },
+      { type: 'fm', wave: 'square', freq: 392, freqEnd: 366, ratio: 1.01, index: 1.4, indexEnd: 0.4, gain: 0.23, attack: 0.01, decay: 0.3, delay: 0.32 },
+      { type: 'tone', wave: 'sine', freq: 196, gain: 0.18, attack: 0.01, decay: 0.28, delay: 0.32 },
+    ] },
+
+    // ---- Every zombie (config/zombies.js sounds; placed at the zombie by game/soundStage.js) ----------------------------
+    // A shopper's feet dragging over the shiny tiles: a scuff that slides down, a soft heel knock, a faint sneaker squeak.
+    shopperShuffle: { volume: 0.34, pitchVariation: 0.1, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2600, freqEnd: 1500, q: 1.4, gain: 0.35, attack: 0.03, decay: 0.16 },
+      { type: 'noise', filter: 'lowpass', freq: 500, q: 0.7, gain: 0.3, attack: 0.004, decay: 0.05 },
+      { type: 'tone', wave: 'sine', freq: 2100, freqEnd: 2500, gain: 0.05, attack: 0.02, decay: 0.06, delay: 0.05 },
+    ] },
+    // ...on carpet (HOFFMAN'S, the Cinema): a soft brush and a dull knock...
+    'shopperShuffle@carpet': { volume: 0.34, pitchVariation: 0.1, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 900, q: 0.7, gain: 0.4, attack: 0.04, decay: 0.2 },
+      { type: 'tone', wave: 'sine', freq: 170, freqEnd: 110, gain: 0.22, attack: 0.004, decay: 0.06 },
+    ] },
+    // ...and on the car park's asphalt: a gritty scrape (grit popping under the sole).
+    'shopperShuffle@asphalt': { volume: 0.36, pitchVariation: 0.1, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1800, freqEnd: 1100, q: 0.9, gain: 0.3, attack: 0.02, decay: 0.18 },
+      { type: 'noise', filter: 'highpass', freq: 4200, q: 0.7, gain: 0.14, attack: 0.001, decay: 0.012, delay: 0.03 },
+      { type: 'noise', filter: 'highpass', freq: 4800, q: 0.7, gain: 0.12, attack: 0.001, decay: 0.01, delay: 0.09 },
+      { type: 'noise', filter: 'highpass', freq: 3900, q: 0.7, gain: 0.1, attack: 0.001, decay: 0.012, delay: 0.14 },
+      { type: 'noise', filter: 'lowpass', freq: 400, q: 0.7, gain: 0.25, attack: 0.004, decay: 0.05 },
+    ] },
+    // "Uuuhhh..." A tired, wobbling groan with a vowel in it: carries further than a footstep.
+    shopperGroan: { volume: 0.55, pitchVariation: 0.12, layers: [
+      { type: 'fm', wave: 'sawtooth', freq: 118, freqEnd: 92, ratio: 0.045, index: 2.2, gain: 0.3, attack: 0.18, decay: 0.95 },
+      { type: 'tone', wave: 'triangle', freq: 236, freqEnd: 182, gain: 0.12, attack: 0.2, decay: 0.8 },
+      { type: 'noise', filter: 'bandpass', freq: 620, freqEnd: 540, q: 3.5, gain: 0.3, attack: 0.2, decay: 0.85 },
+      { type: 'noise', filter: 'bandpass', freq: 1150, freqEnd: 950, q: 5, gain: 0.13, attack: 0.25, decay: 0.7 },
+    ] },
+    // A zombie within reach raising its arms to swing: a rising "HRAAGH!" and the whoosh of the arms. Never misses you, even
+    // from behind (config/zombies.js zombieSoundCues.windup).
+    zombieLunge: { volume: 0.6, pitchVariation: 0.08, layers: [
+      { type: 'fm', wave: 'sawtooth', freq: 150, freqEnd: 250, ratio: 0.5, index: 1.8, indexEnd: 0.6, gain: 0.32, attack: 0.04, decay: 0.3 },
+      { type: 'noise', filter: 'bandpass', freq: 900, freqEnd: 1700, q: 2.2, gain: 0.42, attack: 0.03, decay: 0.28 },
+      { type: 'noise', filter: 'highpass', freq: 4000, freqEnd: 2500, q: 0.7, gain: 0.14, attack: 0.06, decay: 0.12 },
+    ] },
+    // The Shoplifter running at you: stolen coins and keys jingling in its bag with every stride...
+    shoplifterJingle: { volume: 0.42, pitchVariation: 0.15, layers: [
+      { type: 'metal', freq: 3100, ratios: [1, 1.41, 2.13, 2.76], partialDecay: 0.7, gain: 0.32, attack: 0.001, decay: 0.09 },
+      { type: 'metal', freq: 3700, ratios: [1, 1.33, 1.92], partialDecay: 0.7, gain: 0.26, attack: 0.001, decay: 0.08, delay: 0.06 },
+      { type: 'noise', filter: 'highpass', freq: 6000, q: 0.7, gain: 0.08, attack: 0.001, decay: 0.03 },
+    ] },
+    // ...a breathy little "heh-heh-heh"...
+    shoplifterSnicker: { volume: 0.45, pitchVariation: 0.1, layers: [0, 0.13, 0.25].flatMap((delay, i) => [
+      { type: 'noise', filter: 'bandpass', freq: 1400 - i * 60, q: 3, gain: 0.32, attack: 0.008, decay: 0.07, delay },
+      { type: 'tone', wave: 'triangle', freq: 330 - i * 18, gain: 0.12, attack: 0.008, decay: 0.06, delay },
+    ]) },
+    // ...and running OFF with your points: the anti-theft gate's two-tone alarm goes with it (game/shoplifting.js).
+    shoplifterAlarm: { volume: 0.5, pitchVariation: 0, layers: [
+      { type: 'tone', wave: 'square', freq: 1480, gain: 0.16, attack: 0.005, decay: 0.17 },
+      { type: 'tone', wave: 'sine', freq: 2960, gain: 0.05, attack: 0.005, decay: 0.12 },
+      { type: 'tone', wave: 'square', freq: 1175, gain: 0.16, attack: 0.005, decay: 0.17, delay: 0.2 },
+      { type: 'tone', wave: 'sine', freq: 2350, gain: 0.05, attack: 0.005, decay: 0.12, delay: 0.2 },
+    ] },
+    // A boss walks in: a heavy door, then the shop's entrance chime, big and low ("bing... bong"), from where the boss is.
+    bossEntrance: { volume: 0.7, pitchVariation: 0, send: 0.3, layers: [
+      { type: 'tone', wave: 'sine', freq: 62, freqEnd: 40, gain: 0.5, attack: 0.005, decay: 0.5 },
+      { type: 'noise', filter: 'lowpass', freq: 320, q: 0.7, gain: 0.4, attack: 0.003, decay: 0.25 },
+      { type: 'metal', freq: 659, ratios: [1, 2, 2.76, 5.4], partialDecay: 0.6, gain: 0.45, attack: 0.002, decay: 1.2, delay: 0.25 },
+      { type: 'metal', freq: 523, ratios: [1, 2, 2.76, 5.4], partialDecay: 0.6, gain: 0.45, attack: 0.002, decay: 1.6, delay: 0.7 },
+    ] },
+
     saltCrunch: {
       volume: 0.75,
       layers: [

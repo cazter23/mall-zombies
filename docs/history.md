@@ -1,5 +1,51 @@
 # Sunset Galleria: build history ("Current state")
 
+## 15 November 2026 - 3D zombie sound (`claude/spatial-audio`)
+
+Hear WHERE every zombie is: behind you, to the side, upstairs, through a wall. Still no audio files. The whole picture, the
+numbers and how to tune it are in docs/spatial-audio.md.
+- **Positional voices** (audio/sound.js, game/soundStage.js, config/spatialAudio.js):
+  - A zombie's sound gets a PannerNode at the zombie, re-placed every frame, so it follows the zombie and turns as you turn.
+  - Settings > Audio > 3D sound picks HRTF (Headphones, the default) or equal-power stereo (Speakers, where a sound behind you
+    is darker).
+  - Distance falls off by a per-sound PROFILE (a groan carries further than a footstep), with the config entry's maxDistance as
+    the edge.
+  - The guns and every sound of your own are untouched.
+- **Walls and floors** by the room-culling areas and portals, no raycasts:
+  - The same area, or a line straight through an open opening: clear.
+  - The next area: a little muffled. Further away: muffled. Only through a closed shutter: muffled most.
+  - Another area on the other floor: at least muffled.
+  - A sound rings in the reverb of the room it is in: up to two extra convolvers, reused once their tails die.
+- **Cues you can't miss from behind** (docs/voice.md's campy store sounds):
+  - A swing winding up within reach: `zombieLunge`.
+  - The Cart Pusher's telegraph: `cartRattle` gained a forklift's three reversing beeps.
+  - A Shoplifter: its loot jingles as it runs at you, and the anti-theft gate alarm goes with it as it flees with your points
+    (not after you die).
+  - A Mascot: a clown-car horn while its helmet is on.
+  - A boss walking in: a shop door chime from where it is (the PA sting stays).
+  - Cues skip the per-name sound gap and outrank everything for a voice.
+- **Presence:**
+  - Shoppers now shuffle and groan (they had no sounds).
+  - Mannequins creak, only while they move. Carts rattle. Mascots thud further.
+  - Steps change with the floor: carpet in HOFFMAN'S and the Cinema, concrete in the service corridors, asphalt in the car
+    park, with `shopperShuffle@carpet` / `@asphalt` recipes.
+  - The periodic sounds are timed by each zombie's own random stream, so no seeded test or gait roll moved.
+- **Crowds:**
+  - At most 12 positional voices (6 on Graphics > Zombie sound voices: Fewer, which the Potato preset picks: plain stereo, no
+    extra rooms). The lowest-scoring play is dropped or stolen, and a cue always gets in.
+  - The rest of the horde is one looped crowd murmur (audio/crowdBed.js), placed toward where they are.
+- **Measured**, round 30, 40 zombies:
+  - 0 audio underruns on Full and on Fewer; about 0.15 ms of main-thread JS per frame.
+  - Offline, positional HRTF costs about what the old non-positional sounds did, once positions are SET, not glided. A
+    setTargetAtTime glide on a panner's position doubled it (Chrome's per-sample path).
+  - The real cost is zombie sounds feeding the room reverb.
+- **The audition page** (`npm run audition`) has a new top card, 3D zombie sound:
+  - A mini map where you drag a zombie round you (behind a wall, behind a shutter, upstairs, the floor underfoot).
+  - Loop, Walk a circle, the crowd bed, and Measure 3D cost.
+- Tests: tests/spatialAudio.test.js. Shared files changed: config/audio.js (new zombie recipes; mannequinStep, cartSqueak and
+  cartRattle gained layers), config/zombies.js, config/bosses.js (the guard's telegraph is a cue), config/settings.js,
+  game/createGame.js, game/shoplifting.js, zombies/zombie.js, zombies/zombieManager.js, main.js, CLAUDE.md (docs index).
+
 ## 15 November 2026 - Gun weight, and rumble on hits (`claude/bughunt`)
 
 From a gunplay check (what the game already does for hit feedback, reactions, handling, reloads, penetration, weak spots): hit

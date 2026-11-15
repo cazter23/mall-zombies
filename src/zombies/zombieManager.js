@@ -38,7 +38,8 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param onHeadPop    optional (zombie, { headshot, source }) => the Mascot's helmet came off
  * @param onReclaim    optional (zombie) => Captain Coupon put his helmet back on
  * @param onGold       optional (zombie) => an Employee of the Month (a gold Mascot) just spawned
- * @param onSound      optional (name, volume) => play a zombie sound (Mall Walker squeaks, huffs, pants)
+ * @param onSound      optional (name, volume, emitter, def) => play a zombie sound FROM `emitter` (the zombie, or { position });
+ *                     def = its config/zombies.js sounds entry (profile, maxDistance). game/soundStage.js places it.
  * @param navigation   optional { floors, links } for maps with more than one floor (zombies/navigation.js)
  */
 export function createZombieManager({
@@ -68,14 +69,16 @@ export function createZombieManager({
   let spawnClock = 0;
   const lastSpawnAt = new Map();
   // Zombie sounds go through here: the same sound never stacks within soundMinGapSeconds,
-  // so a group of Mall Walkers squeaks like a group, not a wall of noise.
+  // so a group of Mall Walkers squeaks like a group, not a wall of noise. The cues you must not miss (profile 'cue' or
+  // 'boss': a charge, an attack winding up, a getaway) skip the gap. `emitter` is the zombie (or { position }) it comes from.
   let soundClock = 0;
   const lastSoundAt = new Map();
-  function playZombieSound(name, volume) {
+  function playZombieSound(name, volume, emitter = null, def = null) {
     if (!onSound) return;
-    if (soundClock - (lastSoundAt.get(name) ?? -Infinity) < zombieCrowd.soundMinGapSeconds) return;
+    const cue = def?.profile === 'cue' || def?.profile === 'boss';
+    if (!cue && soundClock - (lastSoundAt.get(name) ?? -Infinity) < zombieCrowd.soundMinGapSeconds) return;
     lastSoundAt.set(name, soundClock);
-    onSound(name, volume);
+    onSound(name, volume, emitter, def);
   }
   const ctx = { nav, player, colliders, zombies, canAttack: true, onPlayerHit, onSound: playZombieSound };
   const scratch = new THREE.Vector3();
@@ -134,7 +137,7 @@ export function createZombieManager({
 
   const partyDeaths = createPartyTrapDeaths({ scene, effects, playPop: (position) => {
     const volume = Math.max(0, 1 - position.distanceTo(player.position) / 14);
-    if (volume > 0) playZombieSound('partySnap', volume);
+    if (volume > 0) playZombieSound('partySnap', volume, { position: position.clone() }, { profile: 'body', maxDistance: 14 });
   } });
   const tankDeaths = createTankDeaths();
   function onZombieDeath(zombie) {

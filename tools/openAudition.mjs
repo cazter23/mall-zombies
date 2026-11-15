@@ -14,7 +14,7 @@ import { isStale, sourceFiles, openInBrowser } from './play.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(root, 'dist-audition');
 const FILE = join(OUT, 'gun-sound-audition.html');
-const PAGE = ['tools/audition.html', 'tools/audition.js', 'tools/auditionLegacy.js', 'tools/openAudition.mjs'];
+const PAGE = ['tools/audition.html', 'tools/audition.js', 'tools/auditionLegacy.js', 'tools/auditionSpatial.js', 'tools/openAudition.mjs'];
 
 export async function buildAudition() {
   rmSync(OUT, { recursive: true, force: true });

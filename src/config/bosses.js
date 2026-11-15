@@ -81,7 +81,7 @@ export const bossTypes = {
       telegraphSeconds: 0.8, speed: 10, maxMeters: 8, overshootMeters: 1.5, noseReach: 0.45,
       hitHalfWidth: 0.35, damage: 40, knockback: 0, crashSeconds: 2, crashDamageTakenMultiplier: 1.5, cooldownSeconds: 5 },
     taserSlow: { seconds: 1, speed: 0.65 },
-    sounds: { telegraph: { name: 'paChime', maxDistance: 24 } },
+    sounds: { telegraph: { name: 'paChime', maxDistance: 30, profile: 'cue' } },
     lockdown: { thresholds: [0.75, 0.35], alarmSeconds: 3, seconds: 25, headshots: 3, backup: 2, backupType: 'mallWalker' },
     introBanner: { kicker: 'Loss Prevention advisory', text: 'Officer Kettle has mistaken survival for suspicious behaviour.' },
     encoreBanner: {

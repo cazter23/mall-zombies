@@ -35,7 +35,7 @@ import { createBossDirector } from './bossDirector.js';
 import { configureBossVouchers } from './bossVouchers.js';
 import { createShutterSounds } from './shutterSounds.js';
 import { createDoorOpenings } from './doorOpenings.js';
-import { mascotGold } from '../config/zombies.js';
+import { mascotGold, zombieSoundCues } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
 import { loadMap } from '../maps/index.js';
 import { createPlayerStats, resetPlayerStats } from '../player/stats.js';
@@ -44,6 +44,7 @@ import { createPlayerHealth } from '../player/health.js';
 import { createEffects } from '../fx/effects.js';
 import { createContactShadows } from '../fx/contactShadows.js';
 import { createAmbience } from './ambience.js';
+import { createSoundStage } from './soundStage.js';
 import { createPowerUps } from './powerUps.js';
 import { closingTime } from '../config/closingTime.js';
 import { createClosingTime } from './closingTime.js';
@@ -390,6 +391,8 @@ export function createGame({
     input, player, gun, melee, health, state, shootables, colliders, effects, sound, events, throwables, getRound,
   });
 
+  // Where each zombie sound comes from: placed at the zombie, muffled by walls and floors, the horde as a crowd bed (game/soundStage.js).
+  const soundStage = createSoundStage({ map, player, sound, zombies: () => zombies.zombies });
   const zombies = createZombieManager({
     scene,
     colliders,
@@ -440,7 +443,7 @@ export function createGame({
     onHeadPop: (zombie, { headshot, source }) => events.emit('mascotHeadPop', { zombie, headshot, source, again: zombie.mascotReclaims > 0 }),
     onReclaim: (zombie) => events.emit('mascotReclaim', { zombie }),
     onGold: (zombie) => events.emit('mascotGold', { zombie }),
-    onSound: (name, volume) => sound.play(name, { volume }), // Mall Walker squeaks, huffs and pants
+    onSound: (name, volume, emitter, def) => soundStage.play(name, { emitter, def, volume: emitter ? 1 : volume }), // (from the zombie)
     navigation: map.navigation, // floors + the ramps between them (undefined = one ground floor)
   });
 
@@ -583,6 +586,8 @@ export function createGame({
     hud.setBoss(zombie);
   }
   events.on('bossSpawn', ({ zombie }) => updateBossBar(zombie));
+  // A boss walking in: the shop door's chime, from where it is (config/zombies.js zombieSoundCues; the PA's sting is the announcer's).
+  events.on('bossSpawn', ({ zombie }) => soundStage.play(zombieSoundCues.bossEntrance.name, { emitter: zombie, def: zombieSoundCues.bossEntrance }));
   events.on('bossDefeated', ({ zombie }) => {
     runStats.bossesDefeated += 1;
     updateBossBar(null);
@@ -692,6 +697,7 @@ export function createGame({
     ['effects', () => effects.clear()], // no leftover splatter or tracers from the last run
     ['contactShadows', () => contactShadows.clear()],
     ['ambience', () => ambience.reset()],
+    ['soundStage', () => soundStage.reset()], // (the crowd bed goes quiet)
     ['melee', () => melee.reset()],
     ['aimAssist', () => aimAssist.reset()],
     ['wallet', () => wallet.reset()],
@@ -803,7 +809,7 @@ export function createGame({
   // Reset steps a save does not keep: nothing in them outlasts a round's start that matters (zombies, effects, timers).
   const transientSteps = [
     'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'rockets', 'interactions', 'viewmodel', 'effects', 'contactShadows',
-    'ambience', 'melee', 'aimAssist', 'clockIn', 'stragglers', 'hud', 'saveGame',
+    'ambience', 'soundStage', 'melee', 'aimAssist', 'clockIn', 'stragglers', 'hud', 'saveGame',
     'doorOpenings', // (a load counts every owned area as already welcomed: game/doorOpenings.js, on 'runLoaded')
     'guide', // (its replay count travels in the guide's own record, not the run save)
   ];
@@ -819,6 +825,7 @@ export function createGame({
   // One fixed tick. (main.js polls the controller and runs its menus just before this.)
   function update(dt) {
     ambience.update(dt, state.running && !state.over);
+    soundStage.update(dt, state.running && !state.over);
     // Dead: the world keeps going (zombies wander to the body), the player doesn't.
     // Checked before the pause check, because the mouse is released on death.
     if (death.summary) {
@@ -945,6 +952,7 @@ export function createGame({
     runStats,
     effects,
     ambience,
+    soundStage,
     contactShadows,
     aimAssist,
     gun,

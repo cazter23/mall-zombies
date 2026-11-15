@@ -4,6 +4,9 @@ Every gun's sound is synthesized: there are no audio files. The recipes are in `
 top of `src/config/audio.js`, and the engine is `src/audio/sound.js`. To listen, run `npm run audition` (it opens the page as one file in Firefox, no dev server), or `npm run dev` and open
 http://localhost:5173/tools/audition.html.
 
+Zombie sounds (where they come from, walls, floors, the crowd) are in docs/spatial-audio.md. The guns, hits and every other
+sound of your own stay non-positional.
+
 ## How a shot is built
 Every fire sound has the same named parts, so upgrades can act on them by name:
 - **crack**, the attack: a few ms of shaped noise, or an impulse. This is what makes a small shot feel loud.

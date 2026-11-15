@@ -36,6 +36,7 @@ import { look } from './look.js';
 import { bossComfort } from './bosses.js';
 import { idle } from './idle.js';
 import { closingTime } from './closingTime.js';
+import { spatialAudio } from './spatialAudio.js';
 
 export const settingsTabs = ['Graphics', 'Mouse', 'Controller', 'Audio', 'Comfort'];
 // receiptGuardSeconds: the receipt comes up by itself with its first button focused; for this long a key or controller press
@@ -150,6 +151,16 @@ export const settingDefs = [
     apply: (v) => { look.runtime.zoneGrading = v; },
   },
   {
+    // Zombie sounds placed in 3D (config/spatialAudio.js quality). Fewer: plain stereo panning whatever Settings > Audio > 3D
+    // sound says, half the voices and no extra rooms (the horde's crowd bed covers the rest). The Potato preset picks it.
+    id: 'soundVoices', tab: 'Graphics', label: 'Zombie sound voices', type: 'select', default: spatialAudio.quality, cost: 'medium',
+    options: [
+      { value: 'full', label: `Full (${spatialAudio.voices.full}, 3D)` },
+      { value: 'fewer', label: `Fewer (${spatialAudio.voices.fewer}, stereo only)` },
+    ],
+    apply: (v, ctx) => { spatialAudio.quality = v; ctx.sound?.setSpatial?.(); },
+  },
+  {
     // The VHS tape look (fx/postProcessing.js VhsShader): a style choice, so no cost tag and no preset changes it.
     // One cheap full-screen pass; with Visual effects Off it still shows (that frame is drawn like Low).
     id: 'vhsFilter', tab: 'Graphics', label: 'VHS filter', type: 'select', default: 'off',
@@ -226,6 +237,17 @@ export const settingDefs = [
     id: 'musicVolume', tab: 'Audio', label: 'Background music', type: 'slider',
     min: 0, max: 1, step: 0.05, default: audio.musicVolume, format: percent,
     apply: (v, ctx) => { audio.musicVolume = v; ctx.sound.setMusicVolume?.(v); },
+  },
+  {
+    // Where zombie sounds come from (config/spatialAudio.js mode; audio/sound.js panners). Headphones: HRTF, so behind, above
+    // and below are clear. Speakers: plain left/right panning, with a darker sound from behind.
+    id: 'spatialMode', tab: 'Audio', label: '3D sound', type: 'select', default: spatialAudio.mode,
+    options: [
+      { value: 'headphones', label: 'Headphones (HRTF)' },
+      { value: 'speakers', label: 'Speakers (stereo)' },
+    ],
+    hint: 'Headphones: hear zombies behind you, upstairs and to each side. Speakers: plain left and right. Graphics > Zombie sound voices on Fewer always uses Speakers.',
+    apply: (v, ctx) => { spatialAudio.mode = v; ctx.sound?.setSpatial?.(); },
   },
   {
     id: 'roomEcho', tab: 'Audio', label: 'Room echo', type: 'toggle', default: audio.reverb.enabled,
@@ -347,10 +369,10 @@ export const autoGraphics = {
 export const settingPresets = {
   Graphics: [
     // Potato / Low are for weak computers (a school laptop): lower resolution, no post-processing, no dust / flickering lights.
-    { label: 'Potato', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false, lampCount: 4, neonGlow: false, clutter: 'none', detailDistance: 'close', zoneGrading: false } },
-    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.65), visualEffects: 'off', ambientEffects: false, lampCount: 6, neonGlow: false, clutter: 'some', detailDistance: 'near', zoneGrading: true } },
-    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.8), visualEffects: 'low', ambientEffects: true, lampCount: 8, neonGlow: true, clutter: 'some', detailDistance: 'all', zoneGrading: true } },
-    { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true, lampCount: 'all', neonGlow: true, clutter: 'full', detailDistance: 'all', zoneGrading: true } }, // native, capped at 2x for performance
+    { label: 'Potato', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false, lampCount: 4, neonGlow: false, clutter: 'none', detailDistance: 'close', zoneGrading: false, soundVoices: 'fewer' } },
+    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.65), visualEffects: 'off', ambientEffects: false, lampCount: 6, neonGlow: false, clutter: 'some', detailDistance: 'near', zoneGrading: true, soundVoices: 'full' } },
+    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.8), visualEffects: 'low', ambientEffects: true, lampCount: 8, neonGlow: true, clutter: 'some', detailDistance: 'all', zoneGrading: true, soundVoices: 'full' } },
+    { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true, lampCount: 'all', neonGlow: true, clutter: 'full', detailDistance: 'all', zoneGrading: true, soundVoices: 'full' } }, // native, capped at 2x for performance
   ],
   Comfort: [
     { label: 'Calm', values: { headBob: 0, speedLines: false, horrorLighting: false, dimPhoneFlash: true } }, // for motion sickness (and no flicker)
