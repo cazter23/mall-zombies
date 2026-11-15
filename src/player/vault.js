@@ -7,7 +7,9 @@
 //     waits (up to magnetSeconds) until you're in reach and vaults, instead of jumping early.
 //   - a jump that started a moment ago (airGraceSeconds) can still turn into a vault in the air.
 //   - if the straight-ahead landing is blocked (e.g. a wall right behind a bench), it tries a few
-//     slightly angled paths (directionSearchDegrees) before giving up.
+//     slightly angled paths (directionSearchDegrees) over the SAME obstacle before giving up.
+// Never sideways (docs/vault-notes.md): a counter vault goes along your movement and only over a counter you are looking at;
+// a rail is climbed straight over only when you run and look nearly straight at it (feel.vault.ledge).
 //   - preview(): would pressing jump right now end in a vault? (drives the HUD "Vault" prompt)
 //   - lastResult: why the last attempt failed or "vaulted" (handy when testing in the console).
 import * as THREE from 'three';
@@ -17,11 +19,13 @@ import { colliderSignature, overlapsSolid, rampHeightAt } from '../world/collisi
 const DEG_TO_RAD = Math.PI / 180;
 const ease = (t) => t * t * (3 - 2 * t);
 
-// Ray interval through the footprint, optionally expanded for the player's radius.
+// Ray interval through the footprint, optionally expanded for the player's radius. `over` is straight over the face the ray
+// enters by (a unit vector into the box), `approach` the ray's share along it (1 = head-on).
 function crossing(position, dx, dz, box, padding = 0) {
   let near = -Infinity;
   let far = Infinity;
   let approach = 0;
+  let over = null;
   for (const [axis, direction] of [['x', dx], ['z', dz]]) {
     const low = box.min[axis] - padding;
     const high = box.max[axis] + padding;
@@ -35,23 +39,26 @@ function crossing(position, dx, dz, box, padding = 0) {
     if (entry > near) {
       near = entry;
       approach = Math.abs(direction);
+      over = axis === 'x' ? [Math.sign(direction), 0] : [0, Math.sign(direction)];
     }
     far = Math.min(far, Math.max(a, b));
   }
-  return far > Math.max(0, near) ? { near, far, approach } : null;
+  return far > Math.max(0, near) ? { near, far, approach, over } : null;
 }
 
 /** Does this live body block a vault's path or landing? Not a dead one, and never one flagged ignoreVault (Sunny). */
 export const blocksVault = (body) => body.isAlive && !body.ignoreVault;
 
 // Why a straight vault can fail that a slightly turned path might get round (searchPlan): the landing side, not the approach.
-const LANDING_REASONS = new Set(['no floor to land on', 'no room to start', 'path or landing blocked', 'not looking where it would take you']);
+// (Not 'not looking where it would take you': turning the path toward your view to rescue that was a sideways vault. docs/vault-notes.md)
+const LANDING_REASONS = new Set(['no floor to land on', 'no room to start', 'path or landing blocked']);
 
 export function createVault({ player, colliders, getBodies = () => [] }) {
   const cfg = feel.vault;
   const sample = new THREE.Vector3();
   const previous = new THREE.Vector3();
   let state = null;
+  let magnetBox = null; // the obstacle a held jump press is waiting for (ahead() sets it at the press)
 
   function clearAt(position) {
     if (overlapsSolid(position, feel.player.radius, feel.player.height, colliders, 0, 0)) return false;
@@ -128,15 +135,21 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     return { box, near: Math.max(0, expanded.near), far: expanded.far, dx: nx, dz: nz };
   }
 
-  function findObstacle(start, floorY, dx, dz, maxReach, ledgeOnly = false) {
+  // `only`: consider just this obstacle (a turned search path may dodge a blocked landing, never switch to another obstacle).
+  // Every candidate must be one you are FACING (your view near straight over it), checked here, per obstacle, so the nearest
+  // thing on your path that you are not looking at never hides the one you are (and is never vaulted instead).
+  function findObstacle(start, floorY, dx, dz, maxReach, ledgeOnly = false, only = null) {
     const minApproach = Math.cos(cfg.maxApproachDegrees * DEG_TO_RAD);
     let best = null;
     let reason = 'nothing to vault ahead';
     for (const box of colliders) {
+      if (only && box !== only) continue;
       if (box.ledge) {
         const ledge = ledgeAhead(start, floorY, dx, dz, box);
         if (ledge.reason) {
           if (ledge.reason !== 'nothing to vault ahead') reason = ledge.reason;
+        } else if (!facing(ledge.dx, ledge.dz, cfg.ledge.maxLookDegrees)) {
+          reason = 'not facing it';
         } else if (ledge.near > maxReach) {
           reason = 'too far away';
         } else if (!best || ledge.near < best.near) {
@@ -156,6 +169,11 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       // longer diagonal an angled run takes through it: that made deep counters refuse angles the angle limit allows.
       if ((raw.far - raw.near) * raw.approach > cfg.maxDepth || raw.approach < minApproach) {
         reason = 'too steep an angle (along its long side)';
+        continue;
+      }
+      // Looking along the counter (or away from it) while drifting into it never vaults it, whichever way you move.
+      if (!facing(raw.over[0], raw.over[1], cfg.maxFaceDegrees)) {
+        reason = 'not facing it';
         continue;
       }
       const expanded = crossing(start, dx, dz, box, feel.player.radius + cfg.clearance);
@@ -254,8 +272,8 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
   }
 
   // A full vault plan from `start` (feet) heading (dx, dz) at `speed`, or { reason } it can't work.
-  function makePlan(start, floorY, dx, dz, speed, ledgeOnly = false) {
-    const found = findObstacle(start, floorY, dx, dz, cfg.reach, ledgeOnly);
+  function makePlan(start, floorY, dx, dz, speed, ledgeOnly = false, only = null) {
+    const found = findObstacle(start, floorY, dx, dz, cfg.reach, ledgeOnly, only);
     if (!found.box) return found;
     if (found.box.ledge) return { ...makeLedgePlan(start, found.dx, found.dz, speed, found), ledge: true };
     // Horizontal speed never changes during a vault: the drop on the far side takes as long as covering
@@ -326,23 +344,32 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
   // the vault would carry you). Your movement says whether and how fast; your view says you meant it. Checked against the
   // vault's own direction (after any angled search, and a rail's straight-over line), not your velocity, so strafing along a
   // counter, or a search path turned toward something you aren't facing, never vaults you sideways.
-  // A balcony rail (always climbed straight over) has its own, wider limit: ledge.maxLookDegrees.
+  // A second check (findObstacle, per obstacle): your view must also be near straight over the obstacle itself
+  // (feel.vault.maxFaceDegrees), or looking along a counter while drifting into it diagonally (W+D) vaulted it.
+  // A balcony rail (always climbed straight over, so its vault direction IS straight over) has one limit: ledge.maxLookDegrees.
   const facing = (dx, dz, degrees = cfg.maxLookDegrees) => -Math.sin(player.yaw) * dx - Math.cos(player.yaw) * dz >= Math.cos(degrees * DEG_TO_RAD);
 
   // Try straight ahead, then a few slightly angled paths (a blocked landing can often be dodged).
-  function searchPlan(start, floorY, t) {
+  // The turned paths only dodge a blocked LANDING of the obstacle straight ahead: never another obstacle (they used to pick up
+  // the next counter along, 1 m away in HOFFMAN'S), and never a straight vault refused for anything else (too steep, too far,
+  // wrong height, or not where you look: turning the path toward your view to rescue that was a sideways vault).
+  function searchPlan(start, floorY, t, only = null) {
+    const ahead = findObstacle(start, floorY, t.dx, t.dz, cfg.reach, t.ledgeOnly, only);
+    if (!ahead.box) return { reason: ahead.reason };
     let firstReason = null;
     for (const degrees of cfg.directionSearchDegrees) {
       const a = degrees * DEG_TO_RAD;
       const dx = t.dx * Math.cos(a) - t.dz * Math.sin(a);
       const dz = t.dx * Math.sin(a) + t.dz * Math.cos(a);
-      const result = makePlan(start, floorY, dx, dz, t.speed, t.ledgeOnly);
+      const result = makePlan(start, floorY, dx, dz, t.speed, t.ledgeOnly, ahead.box);
       const plan = result.plan;
-      if (plan && !facing(plan.dx, plan.dz, result.ledge ? cfg.ledge.maxLookDegrees : cfg.maxLookDegrees)) { firstReason ??= 'not looking where it would take you'; continue; }
+      if (plan && !facing(plan.dx, plan.dz, result.ledge ? cfg.ledge.maxLookDegrees : cfg.maxLookDegrees)) {
+        firstReason ??= 'not looking where it would take you';
+        if (degrees === 0) break;
+        continue;
+      }
       if (plan || result.ledge) return result; // (a rail is always climbed straight over: turning the path changes nothing)
       firstReason ??= result.reason;
-      // The turned paths only dodge a blocked LANDING. They never rescue a straight path that was refused for anything else
-      // (too steep an angle, too far, wrong height): turning 24 degrees into a counter you are running along is a sideways yank.
       if (degrees === 0 && !LANDING_REASONS.has(result.reason)) break;
     }
     return { reason: firstReason };
@@ -366,14 +393,20 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     lastResult: '', // why the last attempt failed, or 'vaulted' (for testing / the console)
 
     // Is a vaultable obstacle on your path within magnetRange (worth holding a jump press for)?
-    ahead() {
+    // The press (magnet false) remembers WHICH obstacle; while the press is held ({ magnet: true }, here and in tryStart) only
+    // that one counts, so running past the counter you pressed at never vaults the next one along instead.
+    ahead({ magnet = false } = {}) {
+      if (!magnet) magnetBox = null;
       const ready = readiness();
       if (ready.reason) return false;
       const t = travel();
       if (t.reason) return false;
-      const found = findObstacle(player.position, ready.floorY, t.dx, t.dz, cfg.magnetRange, t.ledgeOnly);
+      if (magnet && !magnetBox) return false;
+      const found = findObstacle(player.position, ready.floorY, t.dx, t.dz, cfg.magnetRange, t.ledgeOnly, magnet ? magnetBox : null);
       // (only worth holding the jump for if the vault would go where you look: a rail's is straight over it)
-      return !!found.box && (found.box.ledge ? facing(found.dx, found.dz, cfg.ledge.maxLookDegrees) : facing(t.dx, t.dz));
+      const worth = !!found.box && (found.box.ledge ? facing(found.dx, found.dz, cfg.ledge.maxLookDegrees) : facing(t.dx, t.dz));
+      if (!magnet && worth) magnetBox = found.box;
+      return worth;
     },
 
     // Would a jump press now end in a vault (now, or once the magnet brings you into reach)?
@@ -390,10 +423,15 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       const advance = Math.max(0, found.near - cfg.reach * cfg.approachFraction) / closing;
       projected.set(player.position.x + t.dx * advance, player.position.y, player.position.z + t.dz * advance);
       if (advance > 0 && !clearAt(projected)) return false;
-      return !!searchPlan(projected, ready.floorY, t).plan;
+      return !!searchPlan(projected, ready.floorY, t, found.box).plan; // (the same obstacle the magnet would wait for)
     },
 
-    tryStart() {
+    // { magnet: true }: a held jump press (controller.vaultHold), which only vaults the obstacle it was pressed at (ahead()).
+    tryStart({ magnet = false } = {}) {
+      if (magnet && !magnetBox) {
+        this.lastResult = 'nothing to vault ahead';
+        return false;
+      }
       const ready = readiness();
       if (ready.reason) {
         this.lastResult = ready.reason;
@@ -404,7 +442,7 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
         this.lastResult = t.reason;
         return false;
       }
-      const result = searchPlan(player.position, ready.floorY, t);
+      const result = searchPlan(player.position, ready.floorY, t, magnet ? magnetBox : null);
       if (!result.plan) {
         this.lastResult = result.reason;
         return false;
@@ -457,6 +495,6 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       }
     },
 
-    reset() { state = null; },
+    reset() { state = null; magnetBox = null; },
   };
 }

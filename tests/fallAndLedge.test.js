@@ -161,7 +161,10 @@ test('a rail works the same walking or sprinting: how fast you run at it does no
   g.map.dispose();
 });
 
-test('the angle you run at a rail, and whether you are moving at all, does not change whether you go over', () => {
+// (Until 15 November 2026 this asked for the same answer at 60 degrees too. A rail is climbed STRAIGHT over, so a 60 degree run
+// turned you 60 degrees and dropped you off the balcony: the sideways vault (docs/vault-notes.md). Now: the same answer at any
+// angle up to 35 degrees, walking, sprinting or from a standstill; at 60 degrees a plain jump, wherever you look.)
+test('the angle you run at a rail (up to 35 degrees), and whether you are moving at all, does not change whether you go over', () => {
   const { g } = fixture();
   const P = g.player;
   let spots = 0;
@@ -174,10 +177,10 @@ test('the angle you run at a rail, and whether you are moving at all, does not c
       for (let u = lo + 1; u <= hi - 1; u += 1.5) {
         const x = thinX ? c + side * 1 : u, z = thinX ? u : c + side * 1;
         if (!g.colliders.some((b) => b !== rail && !b.ledge && Math.abs(b.max.y - rail.min.y) < 0.06 && x > b.min.x && x < b.max.x && z > b.min.z && z < b.max.z)) continue;
-        const attempt = (degrees, speed) => {
+        const attempt = (degrees, speed, lookStraightOver = false) => {
           const a = degrees * Math.PI / 180;
           const dx = nx * Math.cos(a) - nz * Math.sin(a), dz = nx * Math.sin(a) + nz * Math.cos(a);
-          P.teleport({ position: new THREE.Vector3(x, rail.min.y, z), yaw: Math.atan2(-dx, -dz) });
+          P.teleport({ position: new THREE.Vector3(x, rail.min.y, z), yaw: lookStraightOver ? Math.atan2(-nx, -nz) : Math.atan2(-dx, -dz) });
           P.grounded = true;
           P.velocity.set(dx * speed, 0, dz * speed);
           P.moveWish.x = dx;
@@ -190,8 +193,12 @@ test('the angle you run at a rail, and whether you are moving at all, does not c
         };
         const headOn = attempt(0, feel.movement.sprintSpeed);
         if (headOn) spots++;
-        for (const degrees of [-60, -35, 35, 60]) for (const speed of [feel.movement.sprintSpeed, feel.movement.walkSpeed, 0]) {
+        for (const degrees of [-35, -20, 20, 35]) for (const speed of [feel.movement.sprintSpeed, feel.movement.walkSpeed, 0]) {
           assert.equal(attempt(degrees, speed), headOn, `same answer at ${degrees} degrees and ${speed} m/s (${x.toFixed(1)}, ${z.toFixed(1)})`);
+          assert.equal(attempt(degrees, speed, true), headOn, `and looking straight over it (${degrees} degrees, ${speed} m/s)`);
+        }
+        for (const degrees of [-60, 60]) for (const lookStraightOver of [false, true]) {
+          assert.equal(attempt(degrees, feel.movement.sprintSpeed, lookStraightOver), false, `a 60 degree run never climbs (it would turn you 60 degrees)`);
         }
       }
     }

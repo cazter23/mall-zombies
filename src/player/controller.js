@@ -400,16 +400,17 @@ export class PlayerController {
     this.timeSinceJump += dt;
     let vaulted = this.jumpBuffer > 0 && this.vault.tryStart();
     // Pressed jump a bit early with a vaultable obstacle on your path: wait for it instead of jumping.
+    // (ahead() remembers which obstacle; the wait only ever vaults that one: vault.js magnetBox)
     if (!vaulted && this.jumpBuffer > 0 && canJump && this.vaultHold <= 0 && this.vault.ahead()) {
       this.vaultHold = feel.vault.magnetSeconds;
       this.jumpBuffer = 0;
     }
     if (this.vaultHold > 0) {
       this.vaultHold -= dt;
-      vaulted = this.vault.tryStart();
+      vaulted = this.vault.tryStart({ magnet: true });
       if (vaulted) {
         this.vaultHold = 0;
-      } else if (this.vaultHold <= 0 || !canJump || !this.vault.ahead()) {
+      } else if (this.vaultHold <= 0 || !canJump || !this.vault.ahead({ magnet: true })) {
         // Ran out of time, turned away or stopped: it was a normal jump after all.
         this.vaultHold = 0;
         if (canJump) this.jumpBuffer = m.jumpBufferTime;
