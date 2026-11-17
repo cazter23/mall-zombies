@@ -51,7 +51,7 @@ export function buildMovementCourse({ group, box, label, mat, colliders, cx, cz,
     label(words, 0, height + 0.45, z + depth / 2 + 0.02, 2.6, 0.45);
     return { collider, height, depth, vaults, mesh };
   });
-  label('VAULT ROW  (RUN + JUMP)', 0, 2.6, -11.5, 4, 0.8);
+  label('VAULT ROW', 0, 2.6, -11.5, 4, 1.0, undefined, undefined, { style: 'industrial', subtext: 'RUN AND JUMP' });
 
   // --- The ramp, the 3 m landing and the 6.3 m balcony -------------------------------
   const R = COURSE.ramp;
@@ -113,7 +113,7 @@ export function buildMovementCourse({ group, box, label, mat, colliders, cx, cz,
   box(B.x0, B.height, B.z1, B.x1, B.height + COURSE.wallHeight, B.z1 + COURSE.railThick, rail); // north: a wall
   const dropDamage = Math.round((B.height - feel.fall.safeDrop) * feel.fall.damagePerMeter);
   label(`${B.height} m DROP: ~${dropDamage} DAMAGE`, (B.x0 + B.x1) / 2, B.height + 2.0, zAt(s3) + 0.05, 3.4, 0.45);
-  label('RAMP  ·  3 m LANDING  ·  6.3 m BALCONY', (R.x0 + R.x1) / 2, 2.4, R.z0 + 0.6, 4.2, 0.6);
+  label('RAMP', (R.x0 + R.x1) / 2, 2.4, R.z0 + 0.6, 4.2, 1.0, undefined, undefined, { style: 'industrial', subtext: '3 m LANDING  ·  6.3 m BALCONY' });
 
   // --- The reach rule ----------------------------------------------------------------
   const Q = COURSE.reach;
@@ -126,7 +126,7 @@ export function buildMovementCourse({ group, box, label, mat, colliders, cx, cz,
   const tallBox = colliders[colliders.length - 1];
   label('2.0 m: REACHABLE FROM THE COUNTER (NEVER IN THE MALL)', (Q.low.x0 + Q.low.x1) / 2, 2.55, Q.z1 + 0.05, 2.0, 0.5);
   label('2.1 m: OUT OF REACH', (Q.tall.x0 + Q.tall.x1) / 2, 2.65, Q.z1 + 0.05, 2.0, 0.4);
-  label('REACH RULE  (STANDABLE: A STEP, A COUNTER, OR 2.1 m+)', 18.5, 3.3, Q.z1 + 0.6, 5.4, 0.55);
+  label('REACH RULE', 18.5, 3.3, Q.z1 + 0.6, 5.4, 1.1, undefined, undefined, { style: 'industrial', subtext: 'STANDABLE: A STEP, A COUNTER, OR 2.1 m AND UP' });
 
   return {
     vaultRow,

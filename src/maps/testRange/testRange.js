@@ -13,6 +13,8 @@
 //   - East, behind the jump boxes: the REACH RULE blocks (movementCourse.js)
 //   - East:   jump boxes of increasing height, and platforms with growing gaps
 //   - Near spawn: shooting range with practice dummies (3 close, 2 far)
+// The look (backOfHouse.js): the mall's STAFF TRAINING CENTER, a back-of-house warehouse: block walls to a ceiling, safety stripes,
+// fluorescent strips, cones, pallets, and staff signs in the game's sign styles (industrial plates over each station).
 //   - North, through the wall: the SHOOTING GALLERY (gallery.js): targets at 5 to 40 m, a counter that sets their round, a readout
 //   - Right of the spawn: the ARMORY BENCH (armory.js): any gun, warranty, attachments, build, wardrobe and equipment, free
 //   - West, through the wall: the ZOMBIE PEN (pen.js): spawn any zombie, costume or boss; stand still or come at you
@@ -26,13 +28,14 @@ import { createArmory } from './armory.js';
 import { createPen } from './pen.js';
 import { buildMovementCourse } from './movementCourse.js';
 import { createMoveTracker } from './moveTracker.js';
+import { BACK_OF_HOUSE, blockWallMaterial, worldUVs, dressInterior } from './backOfHouse.js';
 import { debug } from '../../config/debug.js';
 import { zombieHealthForRound } from '../../config/economy.js';
 
 const ARENA = {
   center: { x: 0, z: -100 }, // far south of the mall, out of sight behind its walls
   halfSize: 30, // arena is 60m x 60m
-  wallHeight: 2,
+  wallHeight: BACK_OF_HOUSE.ceilingHeight, // (walls run up to the ceiling: backOfHouse.js)
   wallThickness: 0.5,
   lowBarBottom: 1.2, // underside of slide bars/tunnel: above crouch (1.1), below standing (1.8)
   lowBarTop: 1.5,
@@ -40,14 +43,19 @@ const ARENA = {
 
 // The gallery hall, range-local metres: through an opening in the north wall (half-width), this deep, these walls; the firing line
 // (a counter in the middle, F sets the targets' round) just inside. Targets stand config/debug.js gallery.distances beyond it.
-const HALL = { halfWidth: 7, depth: 54, wallHeight: 3, firingLine: -32, counter: { halfWidth: 1.5, depth: 0.5, height: 1.0 } };
+const HALL = { halfWidth: 7, depth: 54, wallHeight: BACK_OF_HOUSE.ceilingHeight, firingLine: -32, counter: { halfWidth: 1.5, depth: 0.5, height: 1.0 } };
 
 // The armory bench, range-local metres: a counter right of the spawn, its buy side facing north (toward the range).
 const BENCH = { x0: 9, x1: 13, z0: 25.4, z1: 26.2, height: 1.0 };
 // The zombie pen, range-local metres: a room west of the west wall (x from -S - width to -S, z z0..z1), entered through an opening in
 // that wall (doorway z0..z1); the console just inside, south of the doorway, its buy side facing north; zombies appear at the far end.
-const PEN = { width: 24, z0: 4, z1: 28, wallHeight: 3, doorway: { z0: 12, z1: 20 }, console: { x0: -33.5, x1: -31.5, z0: 21, z1: 21.6, height: 1.0 },
+const PEN = { width: 24, z0: 4, z1: 28, wallHeight: BACK_OF_HOUSE.ceilingHeight, doorway: { z0: 12, z1: 20 }, console: { x0: -33.5, x1: -31.5, z0: 21, z1: 21.6, height: 1.0 },
   spawnX: -50, spawnZ: [8, 12, 16, 20, 24] };
+
+const SIGN_PIXELS_PER_METRE = 220;
+// Sealed concrete (the floors' 1 m tiles stay: handy for judging distances), and a station header's sign style.
+const CONCRETE = { base: '#bdb9b0', grout: '#8f8b83' };
+const HEADER = { style: 'industrial' };
 
 const RANGE_LIGHT_REACH = 50; // metres: the range's lamp lights nothing further away (the range's far corners are 43 m off)
 
@@ -95,9 +103,14 @@ export function buildTestRange(scene, colliders) {
     return mesh;
   }
 
-  /** A label facing the spawn (+Z), in arena-local coordinates. */
-  function label(text, x, y, z, width, height, background = '#1f1a24', color = '#ffffff') {
-    const texture = makeSignTexture(text, { background, color, aspect: width / height });
+  /**
+   * A label facing the spawn (+Z), in arena-local coordinates. `options`: { style, subtext } (world/textures.js makeSignTexture: a style
+   * paints its own plate and type, e.g. 'industrial' for a station's header, 'wayfinding', 'handwritten'). Its canvas is sized by its
+   * width (SIGN_PIXELS_PER_METRE), as the mall's signs are.
+   */
+  function label(text, x, y, z, width, height, background = '#1f1a24', color = '#ffffff', { style, subtext } = {}) {
+    const texture = makeSignTexture(text, { background: style ? undefined : background, color: style ? undefined : color, style, subtext,
+      aspect: width / height, pixelsWide: Math.min(1024, Math.round(width * SIGN_PIXELS_PER_METRE)) });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: texture }));
     mesh.position.set(cx + x, y, cz + z);
     group.add(mesh);
@@ -105,21 +118,26 @@ export function buildTestRange(scene, colliders) {
 
   // --- Floor and border walls ---------------------------------------------------
 
-  const floorTexture = makeTileTexture({ base: '#d3dbe2', grout: '#93a1ad', variation: 8, seed: 5 });
+  const floorTexture = makeTileTexture({ base: CONCRETE.base, grout: CONCRETE.grout, variation: 8, seed: 5 }); // (sealed concrete, 1 m tiles)
   floorTexture.repeat.set(S, S); // 1m tiles, handy for judging distances
   box(-S, -0.2, -S, S, 0, S, new THREE.MeshStandardMaterial({ map: floorTexture, roughness: 0.5 }));
 
   const H = ARENA.wallHeight;
-  const wall = mat(COLORS.wall);
-  box(-S - T, 0, -S - T, -HALL.halfWidth, H, -S, wall); // north, west of the gallery's opening
-  box(HALL.halfWidth, 0, -S - T, S + T, H, -S, wall); // north, east of it
-  box(-S - T, 0, S, S + T, H, S + T, wall); // south
-  box(-S - T, 0, -S, -S, H, PEN.doorway.z0, wall); // west, north of the pen's doorway
-  box(-S - T, 0, PEN.doorway.z1, -S, H, S, wall); // west, south of it
-  box(S, 0, -S, S + T, H, S, wall); // east
+  const wall = blockWallMaterial();
+  const wallBox = (...args) => worldUVs(box(...args)); // (a block wall: its texture at 1 m = 1 m, whatever its size)
+  wallBox(-S - T, 0, -S - T, -HALL.halfWidth, H, -S, wall); // north, west of the gallery's opening
+  wallBox(HALL.halfWidth, 0, -S - T, S + T, H, -S, wall); // north, east of it
+  wallBox(-S - T, 0, S, S + T, H, S + T, wall); // south
+  wallBox(-S - T, 0, -S, -S, H, PEN.doorway.z0, wall); // west, north of the pen's doorway
+  wallBox(-S - T, 0, PEN.doorway.z1, -S, H, S, wall); // west, south of it
+  wallBox(S, 0, -S, S + T, H, S, wall); // east
 
   // Banner hanging over the area just ahead of the spawn point.
-  label('MOVEMENT TEST RANGE  (T = BACK TO MALL)', 0, 3.6, S - 9, 10, 0.9, '#3b2f44', '#ffd23f');
+  label('STAFF TRAINING CENTER', 0, 3.6, S - 9, 10, 1.4, undefined, undefined, { style: 'wayfinding', subtext: 'AUTHORIZED STAFF ONLY  ·  T: BACK TO THE SALES FLOOR' });
+  // Notices on the north wall's inner face (it faces the spawn), clear of the gallery's opening and the balcony.
+  label('AUTHORIZED STAFF ONLY', -19, 3.6, -S + 0.03, 6, 1.0, undefined, undefined, { style: 'wayfinding' });
+  label('TRAINING IS MANDATORY. SURVIVAL IS ENCOURAGED.', 21, 3.2, -S + 0.03, 6, 1.4, undefined, undefined, { style: 'handwritten' });
+  label('PLEASE DO NOT FEED THE TRAINING DUMMIES', -19, 2.0, -S + 0.03, 5, 0.9, undefined, undefined, { style: 'handwritten' });
 
   // --- Runway: a line every 5m -----------------------------------------------------
 
@@ -130,7 +148,7 @@ export function buildTestRange(scene, colliders) {
     box(runway.x0, 0, z - 0.06, runway.x1, 0.01, z + 0.06, mat(COLORS.stripe), { collide: false });
     label(`${d}m`, runway.x0 - 1, 0.6, z, 1, 0.4); // beside the lane, not in it
   }
-  label('RUNWAY', (runway.x0 + runway.x1) / 2, 2.6, runway.start + 1, 4, 0.8);
+  label('RUNWAY', (runway.x0 + runway.x1) / 2, 2.6, runway.start + 1, 4, 0.8, undefined, undefined, HEADER);
 
   // --- Slide lane: two bars, then a long low tunnel --------------------------------
 
@@ -146,7 +164,7 @@ export function buildTestRange(scene, colliders) {
   box(lane.x0, B0, -10, lane.x1, B1, -2, mat(COLORS.bar));
   box(lane.x0 - 0.3, 0, -10, lane.x0, B1, -2, mat(COLORS.post));
   box(lane.x1, 0, -10, lane.x1 + 0.3, B1, -2, mat(COLORS.post));
-  label('SLIDE / CROUCH', (lane.x0 + lane.x1) / 2, 2.6, 18, 4, 0.8);
+  label('SLIDE / CROUCH', (lane.x0 + lane.x1) / 2, 2.6, 18, 4, 0.8, undefined, undefined, HEADER);
 
   // --- Center: pillars to strafe round ----------------------------------------------
 
@@ -169,7 +187,7 @@ export function buildTestRange(scene, colliders) {
     box(x0, 0, 8, x0 + 2, h, 10, mat(color));
     label(`${h}m`, x0 + 1, h + 0.4, 10, 1.2, 0.4);
   });
-  label('JUMP HEIGHTS', 19, 2.6, 11, 4, 0.8);
+  label('JUMP HEIGHTS', 19, 2.6, 11, 4, 0.8, undefined, undefined, HEADER);
 
   // --- East: platforms with growing gaps (sprint-jump test) -------------------------
 
@@ -181,7 +199,7 @@ export function buildTestRange(scene, colliders) {
     const gapEnd = platformZ[i + 1][0];
     label(`${gapStart - gapEnd}m GAP`, 19, 2, gapStart - 0.01, 2, 0.5);
   }
-  label('GAP JUMPS', 19, 2.6, -3, 4, 0.8);
+  label('GAP JUMPS', 19, 2.6, -3, 4, 0.8, undefined, undefined, HEADER);
 
   // --- Shooting range: practice dummies --------------------------------------------
   // Three close to the spawn, two further back off to the sides. They have
@@ -196,20 +214,20 @@ export function buildTestRange(scene, colliders) {
       health: zombieHealthForRound(1),
     }),
   );
-  label('SHOOTING RANGE', 0, 2.9, 17.6, 4, 0.8);
+  label('SHOOTING RANGE', 0, 2.9, 17.6, 4, 0.8, undefined, undefined, HEADER);
 
   // --- North: the shooting gallery (gallery.js) -------------------------------------
   // A walled hall through the north wall, lit by the mall's sky lights (no lamps of its own: a lamp costs every lit surface in
   // the scene). Floor lines every 5 m from the firing line; a sign over each target; the counter on the firing line.
   const G = debug.gallery;
   const hallEnd = -S - HALL.depth;
-  const hallFloor = makeTileTexture({ base: '#d3dbe2', grout: '#93a1ad', variation: 8, seed: 6 });
+  const hallFloor = makeTileTexture({ base: CONCRETE.base, grout: CONCRETE.grout, variation: 8, seed: 6 });
   hallFloor.repeat.set(HALL.halfWidth * 2, HALL.depth); // (1 m tiles here too)
   box(-HALL.halfWidth, -0.2, hallEnd, HALL.halfWidth, 0, -S, new THREE.MeshStandardMaterial({ map: hallFloor, roughness: 0.5 }));
-  box(-HALL.halfWidth - T, 0, hallEnd, -HALL.halfWidth, HALL.wallHeight, -S - T, wall); // west wall
-  box(HALL.halfWidth, 0, hallEnd, HALL.halfWidth + T, HALL.wallHeight, -S - T, wall); // east wall
-  box(-HALL.halfWidth - T, 0, hallEnd - T, HALL.halfWidth + T, HALL.wallHeight + 1, hallEnd, mat(COLORS.post)); // the backstop
-  label('SHOOTING GALLERY  ·  F AT THE COUNTER: TARGET ROUND', 0, 2.5, -S + 0.6, 9, 0.7, '#3b2f44', '#ffd23f');
+  wallBox(-HALL.halfWidth - T, 0, hallEnd, -HALL.halfWidth, HALL.wallHeight, -S - T, wall); // west wall
+  wallBox(HALL.halfWidth, 0, hallEnd, HALL.halfWidth + T, HALL.wallHeight, -S - T, wall); // east wall
+  box(-HALL.halfWidth - T, 0, hallEnd - T, HALL.halfWidth + T, HALL.wallHeight, hallEnd, mat(COLORS.post)); // the backstop
+  label('SHOOTING GALLERY', 0, 2.6, -S + 0.6, 7, 1.1, undefined, undefined, { style: 'industrial', subtext: 'F AT THE COUNTER: TARGET ROUND' });
   const fl = HALL.firingLine;
   box(-HALL.halfWidth, 0, fl - 0.06, HALL.halfWidth, 0.012, fl + 0.06, mat(COLORS.startLine), { collide: false });
   for (let d = 5; fl - d > hallEnd + 1; d += 5) {
@@ -236,24 +254,46 @@ export function buildTestRange(scene, colliders) {
   const counter = { easier: counterAt(-0.75), harder: counterAt(0.75), normal: new THREE.Vector3(0, 0, 1) };
   // --- Right of the spawn: the armory bench (armory.js) -----------------------------
   box(BENCH.x0, 0, BENCH.z0, BENCH.x1, BENCH.height, BENCH.z1, mat(COLORS.step));
-  label('ARMORY BENCH  (F)', (BENCH.x0 + BENCH.x1) / 2, 2.2, BENCH.z0 - 0.05, 4, 0.7, '#3b2f44', '#ffd23f');
+  label('ARMORY BENCH', (BENCH.x0 + BENCH.x1) / 2, 2.3, BENCH.z0 - 0.05, 4, 0.9, undefined, undefined, { style: 'industrial', subtext: 'HOLD F' });
   const armory = createArmory({ position: new THREE.Vector3(cx + (BENCH.x0 + BENCH.x1) / 2, BENCH.height + 0.1, cz + BENCH.z0 - 0.05) });
 
   // --- West, through the wall: the zombie pen (pen.js) ----------------------------
   const penX0 = -S - T - PEN.width;
-  box(penX0, -0.2, PEN.z0, -S - T, 0, PEN.z1, new THREE.MeshStandardMaterial({ map: (() => { const t = makeTileTexture({ base: '#cfd6cc', grout: '#8f9d92', variation: 8, seed: 7 }); t.repeat.set(PEN.width, PEN.z1 - PEN.z0); return t; })(), roughness: 0.5 }));
-  box(penX0 - T, 0, PEN.z0 - T, -S - T, PEN.wallHeight, PEN.z0, wall); // north wall
-  box(penX0 - T, 0, PEN.z1, -S - T, PEN.wallHeight, PEN.z1 + T, wall); // south wall
-  box(penX0 - T, 0, PEN.z0, penX0, PEN.wallHeight, PEN.z1, wall); // far (west) wall
+  box(penX0, -0.2, PEN.z0, -S - T, 0, PEN.z1, new THREE.MeshStandardMaterial({ map: (() => { const t = makeTileTexture({ base: CONCRETE.base, grout: CONCRETE.grout, variation: 8, seed: 7 }); t.repeat.set(PEN.width, PEN.z1 - PEN.z0); return t; })(), roughness: 0.5 }));
+  wallBox(penX0 - T, 0, PEN.z0 - T, -S - T, PEN.wallHeight, PEN.z0, wall); // north wall
+  wallBox(penX0 - T, 0, PEN.z1, -S - T, PEN.wallHeight, PEN.z1 + T, wall); // south wall
+  wallBox(penX0 - T, 0, PEN.z0, penX0, PEN.wallHeight, PEN.z1, wall); // far (west) wall
   const desk = PEN.console;
   box(desk.x0, 0, desk.z0, desk.x1, desk.height, desk.z1, mat(COLORS.tooHigh)); // the console
-  label('ZOMBIE PEN  ·  CONSOLE (F)', (desk.x0 + desk.x1) / 2, 2.4, desk.z0 - 0.05, 4.2, 0.6, '#3b2f44', '#ffd23f');
-  label('ZOMBIE PEN  \u2190', -26, 2.6, PEN.doorway.z1 + 2, 4, 0.7, '#3b2f44', '#ffd23f');
+  label('ZOMBIE PEN', (desk.x0 + desk.x1) / 2, 2.5, desk.z0 - 0.05, 4.2, 0.9, undefined, undefined, { style: 'industrial', subtext: 'CONSOLE: HOLD F' });
+  label('\u2190 ZOMBIE PEN', -26, 2.6, PEN.doorway.z1 + 2, 4, 0.7, undefined, undefined, { style: 'wayfinding' });
   const inPen = (pos) => pos.x - cx >= penX0 - T && pos.x - cx <= -S && pos.z - cz >= PEN.z0 - T && pos.z - cz <= PEN.z1 + T;
   const pen = createPen({
     position: new THREE.Vector3(cx + (desk.x0 + desk.x1) / 2, desk.height + 0.1, cz + desk.z0 - 0.05),
     spawnSpots: PEN.spawnZ.map((z) => new THREE.Vector3(cx + PEN.spawnX, 0, cz + z)),
     contains: (pos) => contains(pos),
+  });
+
+  // --- The look: ceiling and strips over every room, safety stripes at the walls' feet, cones, pallets (backOfHouse.js) ------
+  const stripe = 0.03; // (proud of the wall's face)
+  dressInterior({
+    group, cx, cz,
+    rooms: [
+      { x0: -S - T, x1: S + T, z0: -S - T, z1: S + T }, // the hall
+      { x0: -HALL.halfWidth - T, x1: HALL.halfWidth + T, z0: hallEnd - T, z1: -S - T }, // the gallery
+      { x0: penX0 - T, x1: -S - T, z0: PEN.z0 - T, z1: PEN.z1 + T }, // the pen
+    ],
+    stripes: [
+      { x0: -S, x1: -HALL.halfWidth, z0: -S, z1: -S + stripe }, { x0: HALL.halfWidth, x1: S, z0: -S, z1: -S + stripe }, // north
+      { x0: -S, x1: S, z0: S - stripe, z1: S }, // south
+      { x0: -S, x1: -S + stripe, z0: -S, z1: PEN.doorway.z0 }, { x0: -S, x1: -S + stripe, z0: PEN.doorway.z1, z1: S }, // west
+      { x0: S - stripe, x1: S, z0: -S, z1: S }, // east
+      { x0: -HALL.halfWidth, x1: -HALL.halfWidth + stripe, z0: hallEnd, z1: -S - T }, { x0: HALL.halfWidth - stripe, x1: HALL.halfWidth, z0: hallEnd, z1: -S - T },
+      { x0: penX0, x1: -S - T, z0: PEN.z0, z1: PEN.z0 + stripe }, { x0: penX0, x1: -S - T, z0: PEN.z1 - stripe, z1: PEN.z1 },
+      { x0: penX0, x1: penX0 + stripe, z0: PEN.z0, z1: PEN.z1 },
+    ],
+    cones: [[-27.5, 25.6], [-21.5, 25.6], [-16.5, 19], [-9.5, 19], [-29, 21.5], [-29, 10.5]],
+    pallets: [[26.5, 27.5, 3], [28.2, 27.6, 2], [-27.8, 28.6, 1], [27.5, -27, 4]],
   });
 
   const inGallery = (pos) => Math.abs(pos.x - cx) <= HALL.halfWidth + T && pos.z - cz <= -S && pos.z - cz >= hallEnd - T;

@@ -87,7 +87,9 @@ test('the readout: real shots give each hit\'s damage, part, distance and fallof
   const o = new THREE.Vector3(), d = new THREE.Vector3();
   g.player.getAim(o, d);
   assert.ok(d.angleTo(bodyCentre(target).sub(o)) < 0.02, 'aimed at the target');
-  // The Rivet Rifle (no spread worth missing over at 20 m), steadied: fire until the target falls.
+  // The Rivet Rifle, every shot dead centre (Math.random 0: no spread offset, weapons/aim.js; fixed AFTER the map is built, as
+  // CLAUDE.md asks), fire until the target falls.
+  t.mock.method(Math, 'random', () => 0);
   g.gun.give(weapons.rivetRifle);
   run.tick(Math.ceil(2 / (1 / feel.simulation.tickRate)));
   g.player.pitch = pitch;
