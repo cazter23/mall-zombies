@@ -8,7 +8,9 @@
 // edge facing north, -Z):
 //   - West:   runway with a line every 5m, for judging sprint/slide distance
 //   - Mid-west: slide bars and a long low tunnel (crouch height fits, standing doesn't)
-//   - Center: pillars to strafe around, and stairs up to a 2m platform
+//   - Center: pillars to strafe around; the VAULT ROW north of them (movementCourse.js)
+//   - North-east: a RAMP to a 3 m landing and a 6.3 m balcony with balcony rails (movementCourse.js)
+//   - East, behind the jump boxes: the REACH RULE blocks (movementCourse.js)
 //   - East:   jump boxes of increasing height, and platforms with growing gaps
 //   - Near spawn: shooting range with practice dummies (3 close, 2 far)
 //   - North, through the wall: the SHOOTING GALLERY (gallery.js): targets at 5 to 40 m, a counter that sets their round, a readout
@@ -22,6 +24,8 @@ import { createDummy } from './dummy.js';
 import { createGallery } from './gallery.js';
 import { createArmory } from './armory.js';
 import { createPen } from './pen.js';
+import { buildMovementCourse } from './movementCourse.js';
+import { createMoveTracker } from './moveTracker.js';
 import { debug } from '../../config/debug.js';
 import { zombieHealthForRound } from '../../config/economy.js';
 
@@ -144,19 +148,16 @@ export function buildTestRange(scene, colliders) {
   box(lane.x1, 0, -10, lane.x1 + 0.3, B1, -2, mat(COLORS.post));
   label('SLIDE / CROUCH', (lane.x0 + lane.x1) / 2, 2.6, 18, 4, 0.8);
 
-  // --- Center: pillars and stairs to a 2m platform --------------------------------
+  // --- Center: pillars to strafe round ----------------------------------------------
 
   for (const [px, pz] of [[-4, 12], [4, 12], [-4, 4], [4, 4], [0, 8]]) {
     box(px - 0.4, 0, pz - 0.4, px + 0.4, 4, pz + 0.4, mat(COLORS.pillar));
   }
-  const steps = [
-    { z0: -13.5, z1: -12, h: 0.5 },
-    { z0: -15, z1: -13.5, h: 1.0 },
-    { z0: -16.5, z1: -15, h: 1.5 },
-    { z0: -24, z1: -16.5, h: 2.0 }, // the platform
-  ];
-  for (const s of steps) box(-3, 0, s.z0, 3, s.h, s.z1, mat(COLORS.step));
-  label('STAIRS (JUMP UP)', 0, 2.6, -10, 4, 0.8);
+
+  // --- Today's moves at today's numbers (movementCourse.js): the vault row, the ramp to a 3 m landing and a 6.3 m balcony with
+  // balcony rails, the reach rule. (They replaced the 12 October stairs, whose 0.5 m steps no longer match any rule.)
+  const course = buildMovementCourse({ group, box, label, mat, colliders, cx, cz, colors: COLORS });
+  const movement = createMoveTracker(); // (the movement readout's numbers: moveTracker.js)
 
   // --- East: jump boxes of increasing height ---------------------------------------
   // A standing jump peaks around 1.05m, so 1.2m should be just out of reach.
@@ -279,6 +280,10 @@ export function buildTestRange(scene, colliders) {
     shootables: [...dummies, ...galleryTargets.map((t) => t.dummy)],
     // The shooting gallery (gallery.js): `inGallery(pos)` (the readout shows there); the armory bench (armory.js: `view` while open).
     // connect() once the game exists (createGame, after the wardrobe).
+    course,
+    movement,
+    // The range's main hall (the movement course): the movement readout shows there.
+    inHall: (pos) => Math.abs(pos.x - cx) <= S + T && Math.abs(pos.z - cz) <= S + T,
     gallery,
     inGallery,
     armory: armory,
@@ -287,6 +292,7 @@ export function buildTestRange(scene, colliders) {
       gallery.connect({ events, player, gun, interactions, counter });
       armory.connect({ events, player, gun, interactions, input, state, sound, wardrobe, equipment, health });
       pen.connect({ events, player, interactions, input, state, sound, zombies, bosses, rounds });
+      movement.connect(player);
     },
     update(dt) {
       for (const dummy of dummies) dummy.update(dt);
@@ -294,6 +300,7 @@ export function buildTestRange(scene, colliders) {
       gallery.update(dt);
       armory.update(dt);
       pen.update(dt);
+      movement.update(dt);
     },
   };
 }

@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 17 November 2026 - The test range's movement course, brought up to date (`claude/test-range-4`, stage 4 of 5)
+
+The course dated from 12 October: its stairs had 0.5 m steps (no rule allows that now) and nothing showed vaulting, balcony rails,
+ramps or fall damage. New stations (maps/testRange/movementCourse.js), each with a sign: a vault row (0.9 / 1.0 / 1.1 m vault,
+1.2 m and a 1.6 m deep counter don't), a ramp to a 3 m landing and a 6.3 m balcony with real balcony rails (the free drop and the
+~40-damage upper-floor drop), and the reach rule (a 0.95 m counter between a 2.0 m block a jump from it reaches and a 2.1 m one it
+doesn't). A movement readout (moveTracker.js, ui/movementReadout.js) shows speed, the last jump or drop, fall damage, slide and
+vault. Found building it: a solid box flush with a ramp's surface is a lip you walk into (the first ramp stopped at 2.85 m), so the
+ramp's solid underside sits 0.6 m below the surface and its flat top runs 1.2 m over the balcony's edge, as the mall's escalators do.
+
 ## 17 November 2026 - The test range's zombie pen (`claude/test-range-3`, stage 3 of 5)
 
 Checking a zombie's hit reactions, splatter or special move meant waiting for its round or spawning it somewhere in the mall. Now a

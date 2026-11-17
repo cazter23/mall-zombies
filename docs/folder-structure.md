@@ -1006,6 +1006,9 @@ src/
                         light it), dummy.js practice mannequins (shootables; round, maxHealth, setRound, onHit),
                         gallery.js the SHOOTING GALLERY's numbers (createGallery: each hit's damage / part / distance / falloff, hit rate
                         by distance, a kill's hit shots and time, the round counter's two prompts; connected by createGame: arena.connect),
+                        movementCourse.js the course's new stations (buildMovementCourse: the vault row, the ramp to a 3 m landing and a
+                        6.3 m balcony with balcony rails (`ledge`), the reach-rule blocks; COURSE holds their numbers),
+                        moveTracker.js the movement readout's numbers (speed, the last jump / drop, fall damage via player.onFall, slide, vault),
                         benchForm.js createBenchForm: the menu behind a range bench (pages of columns; confirm applies at once and marks
                         the run assisted; state.menu while open; closes on a hit, death, moving away; choose() for tests),
                         armory.js the ARMORY BENCH (createArmory: a bench form whose columns apply through the game's own code: gun.give,
@@ -1271,6 +1274,8 @@ src/
                         repeat; on the footer they walk its buttons), A toggles, LB/RB tabs, B / Start back
                         (main.js routes controller input to it while it's open)
     rangeReadout.js     createRangeReadout(): the shooting gallery's readout panel (debug mode): draws gallery.view while you play in it.
+    movementReadout.js  createMovementReadout(): the movement course's readout panel (debug mode): moveTracker's view while you
+                        are in the range's main hall and no menu is open.
     benchForm.js        createBenchFormView(): a test range bench's form (debug mode: the armory bench, the zombie pen's console): its
                         kicker and title, page names, that page's columns (each scrolls to its highlighted choice), what is current, the
                         last change. The order form's paper (retail.css .armory-*).
@@ -1415,8 +1420,13 @@ src/
 - 60x60m open floor centered at (0, -100), far south of the mall, 2m border walls, 1m floor tiles.
 - Shooting range: 5 practice dummies (3 at local z=17 near spawn, 2 at (+-9, 0)) with round-1 zombie health.
 - Contents: runway with a line every 5m; slide bars + an 8m low tunnel (underside 1.2m: crouch fits,
-  standing doesn't); pillars; stairs (0.5m steps) to a 2m platform; jump boxes 0.3-1.2m (1.2 is
-  deliberately unreachable); 0.6m platforms with 2/3/4/5m gaps for sprint-jumps.
+  standing doesn't); pillars; jump boxes 0.3-1.2m (1.2 is deliberately unreachable); 0.6m platforms with 2/3/4/5m gaps for
+  sprint-jumps. TODAY'S MOVES (movementCourse.js, 17 November 2026, replacing the 0.5 m stairs): the VAULT ROW north of the pillars
+  (x -3..3: counters 0.9 / 1.0 / 1.1 m vault, 1.2 m and a 1.6 m deep one don't; z -14 to -27.4); the RAMP (x 9..12, from z -6
+  north) to a flat 3 m LANDING (z -13..-15, a balcony rail on its west side: the free drop), then to the 6.3 m BALCONY (x 6..12,
+  z -29.5..-22: balcony rails west, east and south-west, a wall north; the ramp's flat top runs 1.2 m over its edge, as the mall's
+  escalators do); the REACH RULE (x 16..21, z 13..15: a 0.95 m counter between a 2.0 m block a jump from it reaches and a 2.1 m one
+  it doesn't). The MOVEMENT READOUT shows speed, the last jump / drop, fall damage, slide and vault while you are in the hall.
 - THE SHOOTING GALLERY (gallery.js): through a 14 m opening in the north wall, a hall 54 m deep with 3 m walls and a backstop. A firing
   line at local z -32 with a counter (F: easier / harder targets: the round their health and round scaling stand in for, stepping through
   config/debug.js gallery.rounds; it clears the numbers), floor lines every 5 m, targets at gallery.distances (5 to 40 m), staggered
