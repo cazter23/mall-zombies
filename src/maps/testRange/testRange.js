@@ -13,6 +13,7 @@
 //   - Near spawn: shooting range with practice dummies (3 close, 2 far)
 //   - North, through the wall: the SHOOTING GALLERY (gallery.js): targets at 5 to 40 m, a counter that sets their round, a readout
 //   - Right of the spawn: the ARMORY BENCH (armory.js): any gun, warranty, attachments, build, wardrobe and equipment, free
+//   - West, through the wall: the ZOMBIE PEN (pen.js): spawn any zombie, costume or boss; stand still or come at you
 // =============================================================================
 
 import * as THREE from 'three';
@@ -20,6 +21,7 @@ import { makeTileTexture, makeSignTexture } from '../../world/textures.js';
 import { createDummy } from './dummy.js';
 import { createGallery } from './gallery.js';
 import { createArmory } from './armory.js';
+import { createPen } from './pen.js';
 import { debug } from '../../config/debug.js';
 import { zombieHealthForRound } from '../../config/economy.js';
 
@@ -38,6 +40,10 @@ const HALL = { halfWidth: 7, depth: 54, wallHeight: 3, firingLine: -32, counter:
 
 // The armory bench, range-local metres: a counter right of the spawn, its buy side facing north (toward the range).
 const BENCH = { x0: 9, x1: 13, z0: 25.4, z1: 26.2, height: 1.0 };
+// The zombie pen, range-local metres: a room west of the west wall (x from -S - width to -S, z z0..z1), entered through an opening in
+// that wall (doorway z0..z1); the console just inside, south of the doorway, its buy side facing north; zombies appear at the far end.
+const PEN = { width: 24, z0: 4, z1: 28, wallHeight: 3, doorway: { z0: 12, z1: 20 }, console: { x0: -33.5, x1: -31.5, z0: 21, z1: 21.6, height: 1.0 },
+  spawnX: -50, spawnZ: [8, 12, 16, 20, 24] };
 
 const RANGE_LIGHT_REACH = 50; // metres: the range's lamp lights nothing further away (the range's far corners are 43 m off)
 
@@ -104,7 +110,8 @@ export function buildTestRange(scene, colliders) {
   box(-S - T, 0, -S - T, -HALL.halfWidth, H, -S, wall); // north, west of the gallery's opening
   box(HALL.halfWidth, 0, -S - T, S + T, H, -S, wall); // north, east of it
   box(-S - T, 0, S, S + T, H, S + T, wall); // south
-  box(-S - T, 0, -S, -S, H, S, wall); // west
+  box(-S - T, 0, -S, -S, H, PEN.doorway.z0, wall); // west, north of the pen's doorway
+  box(-S - T, 0, PEN.doorway.z1, -S, H, S, wall); // west, south of it
   box(S, 0, -S, S + T, H, S, wall); // east
 
   // Banner hanging over the area just ahead of the spawn point.
@@ -231,6 +238,23 @@ export function buildTestRange(scene, colliders) {
   label('ARMORY BENCH  (F)', (BENCH.x0 + BENCH.x1) / 2, 2.2, BENCH.z0 - 0.05, 4, 0.7, '#3b2f44', '#ffd23f');
   const armory = createArmory({ position: new THREE.Vector3(cx + (BENCH.x0 + BENCH.x1) / 2, BENCH.height + 0.1, cz + BENCH.z0 - 0.05) });
 
+  // --- West, through the wall: the zombie pen (pen.js) ----------------------------
+  const penX0 = -S - T - PEN.width;
+  box(penX0, -0.2, PEN.z0, -S - T, 0, PEN.z1, new THREE.MeshStandardMaterial({ map: (() => { const t = makeTileTexture({ base: '#cfd6cc', grout: '#8f9d92', variation: 8, seed: 7 }); t.repeat.set(PEN.width, PEN.z1 - PEN.z0); return t; })(), roughness: 0.5 }));
+  box(penX0 - T, 0, PEN.z0 - T, -S - T, PEN.wallHeight, PEN.z0, wall); // north wall
+  box(penX0 - T, 0, PEN.z1, -S - T, PEN.wallHeight, PEN.z1 + T, wall); // south wall
+  box(penX0 - T, 0, PEN.z0, penX0, PEN.wallHeight, PEN.z1, wall); // far (west) wall
+  const desk = PEN.console;
+  box(desk.x0, 0, desk.z0, desk.x1, desk.height, desk.z1, mat(COLORS.tooHigh)); // the console
+  label('ZOMBIE PEN  ·  CONSOLE (F)', (desk.x0 + desk.x1) / 2, 2.4, desk.z0 - 0.05, 4.2, 0.6, '#3b2f44', '#ffd23f');
+  label('ZOMBIE PEN  \u2190', -26, 2.6, PEN.doorway.z1 + 2, 4, 0.7, '#3b2f44', '#ffd23f');
+  const inPen = (pos) => pos.x - cx >= penX0 - T && pos.x - cx <= -S && pos.z - cz >= PEN.z0 - T && pos.z - cz <= PEN.z1 + T;
+  const pen = createPen({
+    position: new THREE.Vector3(cx + (desk.x0 + desk.x1) / 2, desk.height + 0.1, cz + desk.z0 - 0.05),
+    spawnSpots: PEN.spawnZ.map((z) => new THREE.Vector3(cx + PEN.spawnX, 0, cz + z)),
+    contains: (pos) => contains(pos),
+  });
+
   const inGallery = (pos) => Math.abs(pos.x - cx) <= HALL.halfWidth + T && pos.z - cz <= -S && pos.z - cz >= hallEnd - T;
 
   // --- Lighting ------------------------------------------------------------------
@@ -241,29 +265,35 @@ export function buildTestRange(scene, colliders) {
   fill.position.set(cx, 12, cz);
   group.add(fill);
 
+  // Is a point in the range (its hall, the gallery, the pen)? Rounds pause there; T goes back from there.
+  function contains(pos) {
+    return (Math.abs(pos.x - cx) <= S + T && Math.abs(pos.z - cz) <= S + T) || inGallery(pos) || inPen(pos);
+  }
+
   return {
     group,
     // Spawn at the south edge, facing north (-Z) toward everything.
     playerSpawn: { position: new THREE.Vector3(cx, 0, cz + S - 3), yaw: 0 },
-    contains(pos) {
-      return (Math.abs(pos.x - cx) <= S + T && Math.abs(pos.z - cz) <= S + T) || inGallery(pos);
-    },
+    contains,
     // Things the player can shoot (see weapons/hitscan.js)
     shootables: [...dummies, ...galleryTargets.map((t) => t.dummy)],
     // The shooting gallery (gallery.js): `inGallery(pos)` (the readout shows there); the armory bench (armory.js: `view` while open).
     // connect() once the game exists (createGame, after the wardrobe).
     gallery,
     inGallery,
-    armory,
-    connect({ events, player, gun, interactions, input, state, sound, wardrobe, equipment, health }) {
+    armory: armory,
+    pen,
+    connect({ events, player, gun, interactions, input, state, sound, wardrobe, equipment, health, zombies, bosses, rounds }) {
       gallery.connect({ events, player, gun, interactions, counter });
-      armory.connect({ events, player, gun, interactions, input, state, sound, wardrobe, equipment, health, normal: new THREE.Vector3(0, 0, -1) });
+      armory.connect({ events, player, gun, interactions, input, state, sound, wardrobe, equipment, health });
+      pen.connect({ events, player, interactions, input, state, sound, zombies, bosses, rounds });
     },
     update(dt) {
       for (const dummy of dummies) dummy.update(dt);
       for (const { dummy } of galleryTargets) dummy.update(dt);
       gallery.update(dt);
       armory.update(dt);
+      pen.update(dt);
     },
   };
 }

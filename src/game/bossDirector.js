@@ -48,10 +48,11 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     surfaces.clear('boss');
   }
 
-  function spawn(id) {
+  function spawn(id, at = null) {
     if (state.over || spawned || active) return null;
     const marker = bossTypes[id].spawnMarker;
-    const zombie = marker ? zombies.spawn(id, null, { spawnPoints: map.spawnPoints.filter(({ name }) => name === marker) }) : zombies.spawn(id);
+    // (at: an exact spot, for the test range's zombie pen; otherwise the boss's own marker, else any spawn point)
+    const zombie = at ? zombies.spawn(id, at) : marker ? zombies.spawn(id, null, { spawnPoints: map.spawnPoints.filter(({ name }) => name === marker) }) : zombies.spawn(id);
     if (!zombie) return null;
     active = zombie;
     const encore = bossTypes[id].encore !== false && met.has(id);
@@ -104,7 +105,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
       schedule = new Map([...schedule].sort(([a], [b]) => a - b));
       return true;
     },
-    summon(id = schedule?.get(rounds.round) ?? 'janitor') { return bossTypes[id] ? spawn(id) : null; },
+    summon(id = schedule?.get(rounds.round) ?? 'janitor', at = null) { return bossTypes[id] ? spawn(id, at) : null; }, // (at: the zombie pen)
     update(dt, allowSpawn = true) {
       if (active && !zombies.zombies.includes(active)) {
         const zombie = active;
