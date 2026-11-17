@@ -196,8 +196,6 @@ export function createGame({
     onReloadTap: () => gun.requestReload(), // controller X tapped next to a buyable: it was a reload
     onPurchase: (purchase) => events.emit('purchase', purchase),
   });
-  // The test range's shooting gallery (debug mode): shots for its hit rate, the gun in hand for the falloff, its round counter's prompts.
-  arena?.connect?.({ events, player, gun, interactions });
   // Buying a door is a moment (game/doorOpenings.js announces it: the area, each barrier going up and clunking home;
   // the PA welcome, sounds, dust, glow and rumble listen). Its sounds follow the real barrier (game/shutterSounds.js).
   const doorOpenings = createDoorOpenings({ events, doors: map.doors, zones: map.zones, player });
@@ -636,6 +634,9 @@ export function createGame({
   const meleeUpgrades = createMeleeUpgrades({ stats, events }); // box cutter tiers (the desk's second window; tiers live in stats)
   events.on('meleeUpgrade', ({ tier }) => viewmodel.setMeleeColors?.(upgrades.melee[tier - 1].colors)); // (the headless test viewmodel has no hands)
   const wardrobe = createWardrobe({ stats, player, events });
+  // The test range (debug mode): its shooting gallery (shots for the hit rate, the gun for the falloff, the round counter) and its
+  // armory bench (the gun, the wardrobe, the pockets, the armour) get the game's parts once they all exist.
+  arena?.connect?.({ events, player, gun, interactions, input, state, sound, wardrobe, equipment, health });
   // THE RETURN: the hidden quest that issues Return to Sender, and its return labels (game/returnQuest.js). After
   // closing, so a ticked duty's own PA line is queued before the label's.
   const returnQuest = createReturnQuest({

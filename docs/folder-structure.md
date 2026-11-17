@@ -1005,7 +1005,10 @@ src/
                         contains, shootables, gallery, inGallery, connect, update }, one lamp of limited reach (the mall's sky lights
                         light it), dummy.js practice mannequins (shootables; round, maxHealth, setRound, onHit),
                         gallery.js the SHOOTING GALLERY's numbers (createGallery: each hit's damage / part / distance / falloff, hit rate
-                        by distance, a kill's hit shots and time, the round counter's two prompts; connected by createGame: arena.connect)
+                        by distance, a kill's hit shots and time, the round counter's two prompts; connected by createGame: arena.connect),
+                        armory.js the ARMORY BENCH (createArmory: a form of pages and columns, each choice applied at once through the
+                        game's own code: gun.give, withTier / withRenewals / withAttachment, a build as the ritual makes it, wardrobe.buy /
+                        wear, equipment.refill, health armour; sets state.menu while open and marks the run assisted; choose() for tests)
   audio/
     sound.js            createSound({ context, recipes, reverb }): Web Audio synth for config/audio.js recipes. play(name, { volume, pan,
                         pitch, step, variant, at }) -> { stop() } | null: one VOICE per play (layers -> parts -> drive -> volume -> pan ->
@@ -1264,6 +1267,8 @@ src/
                         repeat; on the footer they walk its buttons), A toggles, LB/RB tabs, B / Start back
                         (main.js routes controller input to it while it's open)
     rangeReadout.js     createRangeReadout(): the shooting gallery's readout panel (debug mode): draws gallery.view while you play in it.
+    armoryForm.js       createArmoryForm(): the armory bench's form (debug mode): page names, that page's columns (each scrolls to its
+                        highlighted choice), what is fitted, the last change. The order form's paper (retail.css .armory-*).
     debugPanel.js       createDebugPanel({ status }): the small read-only debug window (the ` key): every debug key by group, live
                         round / points / enemies / sale, selected spawn type, next gun, god mode and active boss.
                         Commands are grouped into columns with a responsive layout; the last result stays at the bottom.
@@ -1411,6 +1416,10 @@ src/
   line at local z -32 with a counter (F: easier / harder targets: the round their health and round scaling stand in for, stepping through
   config/debug.js gallery.rounds; it clears the numbers), floor lines every 5 m, targets at gallery.distances (5 to 40 m), staggered
   sideways (gallery.lanes) so none hides another, each with a distance sign. The readout (ui/rangeReadout.js) shows while you play in it.
+- THE ARMORY BENCH (armory.js): a counter right of the spawn (local x 9..13, z 25.4..26.2, 1 m), its buy side facing north. Hold F: a
+  form with five pages (Gun: gun, warranty, renewals; Attachments: one column per slot, None or what fits; Build: stuffing (No build),
+  Heart, quality; Wardrobe: one column per slot; Equipment: Lethal, Tactical, Bubble Wrap layers). Confirm applies at once and marks
+  the run assisted. The gun in your hands changes when the form closes (the gun holds still while any menu is open).
 - Players never see any of this: debug mode is off unless switched on. Don't build game features into it.
 
 ## Notes by system
