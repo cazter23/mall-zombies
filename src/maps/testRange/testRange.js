@@ -12,12 +12,14 @@
 //   - East:   jump boxes of increasing height, and platforms with growing gaps
 //   - Near spawn: shooting range with practice dummies (3 close, 2 far)
 //   - North, through the wall: the SHOOTING GALLERY (gallery.js): targets at 5 to 40 m, a counter that sets their round, a readout
+//   - Right of the spawn: the ARMORY BENCH (armory.js): any gun, warranty, attachments, build, wardrobe and equipment, free
 // =============================================================================
 
 import * as THREE from 'three';
 import { makeTileTexture, makeSignTexture } from '../../world/textures.js';
 import { createDummy } from './dummy.js';
 import { createGallery } from './gallery.js';
+import { createArmory } from './armory.js';
 import { debug } from '../../config/debug.js';
 import { zombieHealthForRound } from '../../config/economy.js';
 
@@ -33,6 +35,9 @@ const ARENA = {
 // The gallery hall, range-local metres: through an opening in the north wall (half-width), this deep, these walls; the firing line
 // (a counter in the middle, F sets the targets' round) just inside. Targets stand config/debug.js gallery.distances beyond it.
 const HALL = { halfWidth: 7, depth: 54, wallHeight: 3, firingLine: -32, counter: { halfWidth: 1.5, depth: 0.5, height: 1.0 } };
+
+// The armory bench, range-local metres: a counter right of the spawn, its buy side facing north (toward the range).
+const BENCH = { x0: 9, x1: 13, z0: 25.4, z1: 26.2, height: 1.0 };
 
 const RANGE_LIGHT_REACH = 50; // metres: the range's lamp lights nothing further away (the range's far corners are 43 m off)
 
@@ -221,6 +226,11 @@ export function buildTestRange(scene, colliders) {
   const gallery = createGallery({ targets: galleryTargets, cfg: G, healthFor: zombieHealthForRound });
   const counterAt = (x) => new THREE.Vector3(cx + x, C.height + 0.1, cz + fl + 0.05);
   const counter = { easier: counterAt(-0.75), harder: counterAt(0.75), normal: new THREE.Vector3(0, 0, 1) };
+  // --- Right of the spawn: the armory bench (armory.js) -----------------------------
+  box(BENCH.x0, 0, BENCH.z0, BENCH.x1, BENCH.height, BENCH.z1, mat(COLORS.step));
+  label('ARMORY BENCH  (F)', (BENCH.x0 + BENCH.x1) / 2, 2.2, BENCH.z0 - 0.05, 4, 0.7, '#3b2f44', '#ffd23f');
+  const armory = createArmory({ position: new THREE.Vector3(cx + (BENCH.x0 + BENCH.x1) / 2, BENCH.height + 0.1, cz + BENCH.z0 - 0.05) });
+
   const inGallery = (pos) => Math.abs(pos.x - cx) <= HALL.halfWidth + T && pos.z - cz <= -S && pos.z - cz >= hallEnd - T;
 
   // --- Lighting ------------------------------------------------------------------
@@ -240,16 +250,20 @@ export function buildTestRange(scene, colliders) {
     },
     // Things the player can shoot (see weapons/hitscan.js)
     shootables: [...dummies, ...galleryTargets.map((t) => t.dummy)],
-    // The shooting gallery (gallery.js): `inGallery(pos)` (the readout shows there), and connect() once the game exists.
+    // The shooting gallery (gallery.js): `inGallery(pos)` (the readout shows there); the armory bench (armory.js: `view` while open).
+    // connect() once the game exists (createGame, after the wardrobe).
     gallery,
     inGallery,
-    connect({ events, player, gun, interactions }) {
+    armory,
+    connect({ events, player, gun, interactions, input, state, sound, wardrobe, equipment, health }) {
       gallery.connect({ events, player, gun, interactions, counter });
+      armory.connect({ events, player, gun, interactions, input, state, sound, wardrobe, equipment, health, normal: new THREE.Vector3(0, 0, -1) });
     },
     update(dt) {
       for (const dummy of dummies) dummy.update(dt);
       for (const { dummy } of galleryTargets) dummy.update(dt);
       gallery.update(dt);
+      armory.update(dt);
     },
   };
 }

@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 17 November 2026 - The test range's armory bench (`claude/test-range-2`, stage 2 of 5)
+
+Trying a gun meant juggling debug keys (H for the next gun, U for the next tier) and could not reach attachments, builds or Kevin's
+items at all. Now a bench right of the test range's spawn (maps/testRange/armory.js, ui/armoryForm.js): hold F, and a form of five
+pages applies any gun, warranty tier, renewals, attachments that fit, a Build-A-Blaster build (made exactly as the ritual makes it, so
+the quality's damage boost and the stuffing's tracers are real), wardrobe items, a full Lethal or Tactical pocket and Bubble Wrap
+layers, each the moment you confirm, through the game's own code. Using it marks the run as a debug run. The gun in your hands
+changes when the form closes (the gun holds still while a menu is open). The gallery's connect moved after the wardrobe in createGame.
+
 ## 17 November 2026 - Debug mode, and the test range's shooting gallery (`claude/test-range`, stage 1 of 5)
 
 The debug keys, the test range and window.__mall were always on, and the test range dated from 12 October. Stage 1 of the test range

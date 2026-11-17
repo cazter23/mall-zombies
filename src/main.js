@@ -37,6 +37,7 @@ import { createSound } from './audio/sound.js';
 import { createSettings, hasSavedSettings, readSavedSetting } from './game/settings.js';
 import { debugModeOn } from './game/debugMode.js';
 import { createRangeReadout } from './ui/rangeReadout.js';
+import { createArmoryForm } from './ui/armoryForm.js';
 import { settingPresets } from './config/settings.js';
 import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createControlsMenu } from './ui/controlsMenu.js';
@@ -270,6 +271,8 @@ const controlsMenu = createControlsMenu({ debugKeys });
 // The shooting gallery's readout (debug mode: the test range, maps/testRange/gallery.js).
 const rangeReadout = g.arena?.gallery ? createRangeReadout() : null;
 if (rangeReadout) document.body.appendChild(rangeReadout.element);
+const armoryForm = g.arena?.armory ? createArmoryForm() : null; // (the test range's armory bench: maps/testRange/armory.js)
+if (armoryForm) document.body.appendChild(armoryForm.element);
 const debugPanel = debugKeys ? createDebugPanel({ status: () => g.debug.status() }) : null;
 if (debugPanel) {
   document.body.appendChild(debugPanel.element);
@@ -712,6 +715,7 @@ function render(alpha, frameTime) {
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   rangeReadout?.update(game.running && !game.over && g.arena?.inGallery?.(player.position) ? g.arena.gallery.view : null); // (debug mode: the test range's gallery)
+  armoryForm?.update(game.over ? null : g.arena.armory.view, menuLabels);
   hud.setBagDrop(game.over ? null : g.bagDrops.status);
   const objectiveArea = ui.startObjective.until;
   // The line under the round box: the shutter until the Hallway is owned, then (Directed only) Closing Time's next step.

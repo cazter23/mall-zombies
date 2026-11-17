@@ -453,6 +453,15 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .hud.menu-open .crosshair, .hud.fitting-open .crosshair { display: none; }
 /* The fitting-room picker (ui/fittingRoomPicker.js): the order form's paper with four slot columns. */
 .fitting-form { border-top-color: var(--mint); }
+/* The test range's armory bench (debug mode, ui/armoryForm.js): the same paper, its page names on top, as many columns as the page has. */
+.armory-form { position: fixed; z-index: 45; width: min(56em, calc(100vw - 48px)); border-top-color: var(--raspberry); }
+.armory-form .order-columns { grid-template-columns: repeat(var(--armory-columns, 4), minmax(0, 1fr)); }
+.armory-form .order-list { max-height: 20em; overflow-y: auto; scrollbar-width: thin; }
+.armory-form .order-row.unavailable { opacity: .45; }
+.armory-pages { display: flex; gap: .4em; margin-bottom: .5em; flex-wrap: wrap; }
+.armory-page { padding: .15em .55em; border: 2px solid var(--plum); opacity: .55; text-transform: uppercase; letter-spacing: .06em; font-size: .85em; }
+.armory-page.active { opacity: 1; background: var(--plum); color: var(--paper-light); }
+.armory-message { margin-top: .6em; font-style: italic; font-weight: 500; }
 .fitting-form .order-columns { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6em; }
 .fitting-form .order-row { padding: .35em .45em .4em .55em; min-height: 2.6em; align-content: center; }
 .fitting-form .order-row b { font-size: 1em; }

@@ -52,7 +52,8 @@ and only rebuilds when the code has changed.
 
 To work on the game with hot reload instead, run `npm run dev` and open the address it prints.
 
-**Debug mode** (cheat keys, and a test range with a shooting gallery that reads out damage and falloff) is off when you play. It is on
+**Debug mode** (cheat keys, and a test range with a shooting gallery that reads out damage and falloff, and an armory bench with every
+gun, upgrade and item for free) is off when you play. It is on
 with `npm run dev`, when the address ends in `?debug`, or after switching on Settings > Debug > Debug mode and reopening the game.
 The backquote key lists the debug keys and T goes to the test range. A run that uses a debug key is not recorded.
 
