@@ -1,16 +1,17 @@
 // =============================================================================
-// THE ARMORY BENCH'S FORM (debug mode: maps/testRange/armory.js `view`). The order form's paper and keycaps (ui/orderForm.js,
-// retail.css .order-*), like the fitting-room picker: the page names on top (Gun, Attachments, Build, Wardrobe, Equipment), that page's
-// columns, what is fitted now marked in each, the last change's message under them. Only draws; the choices are made on the fixed tick.
+// A TEST RANGE BENCH'S FORM (debug mode: maps/testRange/benchForm.js `view`: the armory bench and the zombie pen's console). The order
+// form's paper and keycaps (ui/orderForm.js, retail.css .order-*), like the fitting-room picker: the page names on top, that page's
+// columns (each scrolls to its highlighted choice), what is in effect marked in each, the last change's message under them. Only draws;
+// the choices are made on the fixed tick.
 //
-//   const form = createArmoryForm()     (main.js appends form.element)
+//   const form = createBenchFormView()  (main.js appends form.element)
 //   form.update(view | null, labels)    labels: { confirm, back, move, switch } for the device in use
 // =============================================================================
 import { keycaps } from './orderForm.js';
 
 const hex = (color) => `#${color.toString(16).padStart(6, '0')}`;
 
-export function createArmoryForm() {
+export function createBenchFormView() {
   const element = document.createElement('div');
   element.className = 'order-form fitting-form armory-form';
   element.hidden = true;
@@ -29,7 +30,7 @@ export function createArmoryForm() {
     for (const item of col.items) {
       const li = el('li', `order-row${item.selected ? ' selected' : ''}${item.available ? '' : ' unavailable'}`);
       if (item.color != null) li.style.setProperty('--swatch', hex(item.color));
-      li.append(el('b', '', item.name), el('span', '', item.current ? 'Fitted' : item.available ? '' : item.note));
+      li.append(el('b', '', item.name), el('span', '', item.current ? 'Current' : item.available ? '' : item.note));
       list.append(li);
     }
     box.append(el('div', 'order-label', col.name), list);
@@ -51,7 +52,7 @@ export function createArmoryForm() {
       if (key === lastKey) return;
       lastKey = key;
       const head = el('div', 'order-head');
-      head.append(el('span', 'order-kicker', 'Test range · Armory bench · Free'), el('span', 'order-title', `In hand: ${view.gun}`));
+      head.append(el('span', 'order-kicker', view.kicker), el('span', 'order-title', view.title));
       const pages = el('div', 'armory-pages');
       for (const page of view.pages) pages.append(el('span', `armory-page${page.active ? ' active' : ''}`, page.name));
       const columns = el('div', 'order-columns');

@@ -1006,9 +1006,13 @@ src/
                         light it), dummy.js practice mannequins (shootables; round, maxHealth, setRound, onHit),
                         gallery.js the SHOOTING GALLERY's numbers (createGallery: each hit's damage / part / distance / falloff, hit rate
                         by distance, a kill's hit shots and time, the round counter's two prompts; connected by createGame: arena.connect),
-                        armory.js the ARMORY BENCH (createArmory: a form of pages and columns, each choice applied at once through the
-                        game's own code: gun.give, withTier / withRenewals / withAttachment, a build as the ritual makes it, wardrobe.buy /
-                        wear, equipment.refill, health armour; sets state.menu while open and marks the run assisted; choose() for tests)
+                        benchForm.js createBenchForm: the menu behind a range bench (pages of columns; confirm applies at once and marks
+                        the run assisted; state.menu while open; closes on a hit, death, moving away; choose() for tests),
+                        armory.js the ARMORY BENCH (createArmory: a bench form whose columns apply through the game's own code: gun.give,
+                        withTier / withRenewals / withAttachment, a build as the ritual makes it, wardrobe.buy / wear, equipment.refill, armour),
+                        pen.js the ZOMBIE PEN (createPen: a bench form console that spawns any zombie type, Mascot costume or gold one, or
+                        mall boss (through the boss director's summon(id, at)) at the pen's far end; Stand still holds them (bosses pinned),
+                        their failsafe stuck timer reset each tick; leaving the range clears the pen)
   audio/
     sound.js            createSound({ context, recipes, reverb }): Web Audio synth for config/audio.js recipes. play(name, { volume, pan,
                         pitch, step, variant, at }) -> { stop() } | null: one VOICE per play (layers -> parts -> drive -> volume -> pan ->
@@ -1267,8 +1271,9 @@ src/
                         repeat; on the footer they walk its buttons), A toggles, LB/RB tabs, B / Start back
                         (main.js routes controller input to it while it's open)
     rangeReadout.js     createRangeReadout(): the shooting gallery's readout panel (debug mode): draws gallery.view while you play in it.
-    armoryForm.js       createArmoryForm(): the armory bench's form (debug mode): page names, that page's columns (each scrolls to its
-                        highlighted choice), what is fitted, the last change. The order form's paper (retail.css .armory-*).
+    benchForm.js        createBenchFormView(): a test range bench's form (debug mode: the armory bench, the zombie pen's console): its
+                        kicker and title, page names, that page's columns (each scrolls to its highlighted choice), what is current, the
+                        last change. The order form's paper (retail.css .armory-*).
     debugPanel.js       createDebugPanel({ status }): the small read-only debug window (the ` key): every debug key by group, live
                         round / points / enemies / sale, selected spawn type, next gun, god mode and active boss.
                         Commands are grouped into columns with a responsive layout; the last result stays at the bottom.
@@ -1420,6 +1425,11 @@ src/
   form with five pages (Gun: gun, warranty, renewals; Attachments: one column per slot, None or what fits; Build: stuffing (No build),
   Heart, quality; Wardrobe: one column per slot; Equipment: Lethal, Tactical, Bubble Wrap layers). Confirm applies at once and marks
   the run assisted. The gun in your hands changes when the form closes (the gun holds still while any menu is open).
+- THE ZOMBIE PEN (pen.js): a 24 x 24 m room west of the range's west wall (local x -54.5..-30.5, z 4..28, 3 m walls), entered through
+  an 8 m doorway in that wall (z 12..20). The console (a bench form, local x -33.5..-31.5, z 21..21.6) is just inside, south of the
+  doorway, its buy side facing north. Zombies appear at the far end (x -50, z 8..24, in turn). Columns: Zombie, Mascot (each costume,
+  and each gold), Boss (the four mall bosses; the Last Customer is Closing Time's), They... (Stand still / Come at me), Pen (Clear).
+  The game's Mascot cap and one-boss-per-round rule still hold: the console says so. Pen zombies pay nothing.
 - Players never see any of this: debug mode is off unless switched on. Don't build game features into it.
 
 ## Notes by system

@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 17 November 2026 - The test range's zombie pen (`claude/test-range-3`, stage 3 of 5)
+
+Checking a zombie's hit reactions, splatter or special move meant waiting for its round or spawning it somewhere in the mall. Now a
+pen through the test range's west wall (maps/testRange/pen.js): a console spawns any zombie type, Mascot costume (or the gold
+Employee of the Month) or mall boss at the far end, and they stand still (held, facing you) or come at you. Bosses come through
+the boss director (health bar, phases, advisories), which got an optional spot to summon at (bossDirector summon(id, at)); a held
+boss is pinned, as bosses ignore holds. The failsafe never "rescues" a pen zombie to the mall, and leaving the range clears the
+pen. The armory's menu became a shared bench form (benchForm.js, ui/benchForm.js) that both benches use.
+
 ## 17 November 2026 - The test range's armory bench (`claude/test-range-2`, stage 2 of 5)
 
 Trying a gun meant juggling debug keys (H for the next gun, U for the next tier) and could not reach attachments, builds or Kevin's
