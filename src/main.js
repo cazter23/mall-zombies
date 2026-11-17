@@ -38,6 +38,7 @@ import { createSettings, hasSavedSettings, readSavedSetting } from './game/setti
 import { debugModeOn } from './game/debugMode.js';
 import { createRangeReadout } from './ui/rangeReadout.js';
 import { createBenchFormView } from './ui/benchForm.js';
+import { createMovementReadout } from './ui/movementReadout.js';
 import { settingPresets } from './config/settings.js';
 import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createControlsMenu } from './ui/controlsMenu.js';
@@ -273,6 +274,8 @@ const rangeReadout = g.arena?.gallery ? createRangeReadout() : null;
 if (rangeReadout) document.body.appendChild(rangeReadout.element);
 const benchForm = g.arena?.armory ? createBenchFormView() : null; // (the test range's armory bench and zombie pen console: maps/testRange/benchForm.js)
 if (benchForm) document.body.appendChild(benchForm.element);
+const movementReadout = g.arena?.movement ? createMovementReadout() : null; // (the test range's movement course: maps/testRange/moveTracker.js)
+if (movementReadout) document.body.appendChild(movementReadout.element);
 const debugPanel = debugKeys ? createDebugPanel({ status: () => g.debug.status() }) : null;
 if (debugPanel) {
   document.body.appendChild(debugPanel.element);
@@ -716,6 +719,7 @@ function render(alpha, frameTime) {
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   rangeReadout?.update(game.running && !game.over && g.arena?.inGallery?.(player.position) ? g.arena.gallery.view : null); // (debug mode: the test range's gallery)
   benchForm?.update(game.over ? null : g.arena.armory.view ?? g.arena.pen.form.view, menuLabels);
+  movementReadout?.update(game.running && !game.over && !game.menu && g.arena.inHall(player.position) ? g.arena.movement.view : null);
   hud.setBagDrop(game.over ? null : g.bagDrops.status);
   const objectiveArea = ui.startObjective.until;
   // The line under the round box: the shutter until the Hallway is owned, then (Directed only) Closing Time's next step.

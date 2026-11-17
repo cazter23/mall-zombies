@@ -186,8 +186,8 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 ## Debug mode and the test range
 Off for players. On for `npm run dev`, an address ending in `?debug`, or Settings > Debug (config/debug.js `mode`). It turns on the debug
 keys, window.__mall and the test range (T teleports there; its shooting gallery reads out damage, falloff and hit rate; its armory bench
-hands out any gun, warranty, attachment, build, wardrobe item or equipment; its zombie pen spawns any zombie, costume or boss). Layout:
-docs/folder-structure.md.
+hands out any gun, warranty, attachment, build, wardrobe item or equipment; its zombie pen spawns any zombie, costume or boss; its movement course shows today's vault, rail, ramp and fall
+rules with a readout). Layout: docs/folder-structure.md.
 
 ## Build order (status, November 2026)
 1-4. Walkable mall, staple gun, Shopper zombies + box cutter, waves/points/doors/wall buys (done)
