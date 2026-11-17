@@ -44,6 +44,7 @@ filming rig stays beside the head, verifies ponytail/phone animation, and checks
 
 `tests/manager.test.js` covers exact meeting cancellation, failure buff expiry, report target cap/visibility, every meeting cleanup path, reward collection, booth redemption and automatic conversion at the voucher tier cap.
 
+`tests/debugCommands.test.js` also checks debug mode (off for players; on only for the dev server, ?debug or the saved switch) and that the mall carries both sky lights itself while the test range's lamp stops short of the mall's walls (the mall looks the same with debug mode off). `tests/shootingGallery.test.js` covers the test range's shooting gallery: a target at each configured distance, inside the range; the counter's prompt sets the targets' round (health, round scaling, never below the first); real Rivet Rifle shots at the 20 m target give the readout's hit (distance, the gun's own falloff, the kill), the hit rate counted toward the aimed target only, and the kill's hit shots and time; a new round clears the numbers.
 `tests/debugCommands.test.js` also checks the overlay's grouped commands, selected next gun, active boss,
 god mode, refresh timing and accessible visibility. (Keyless commands such as 'pockets' are not in its key table: tests/equipment.test.js checks that one.)
 

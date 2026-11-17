@@ -1,18 +1,27 @@
 // =============================================================================
 // DEBUG CONFIG
-// Developer conveniences. They work in a normal game (no debug mode to switch on): press the keys while playing.
-// Turn `enabled` off before sharing the game. The commands themselves live in game/debugCommands.js (headless,
-// tested); main.js only turns key presses into command ids; ui/debugPanel.js is the small window that lists them.
+// Developer conveniences, all behind DEBUG MODE, which is off for players. It is on when any of these is true (game/debugMode.js):
+//   - the dev server (npm run dev) ............. mode.inDev
+//   - the address ends in ?debug ............... mode.urlFlag (the built game, the single file, a browser check: `npm run preview`, open /?debug)
+//   - Settings > Debug > Debug mode ............ the saved 'debugMode' setting (it takes effect when the game is next opened)
+// What debug mode turns on: the debug keys and window (`keys`), the test range (`testArena`) and window.__mall (`exposeToWindow`);
+// each can be left out here. Using a debug command marks the run assisted: it is not filed in the career record, skin challenges,
+// the Survival Guide or Lost and Found, and its receipt says DEBUG RUN (game/createGame.js state.assisted).
+// The commands themselves live in game/debugCommands.js (headless, tested: tests use them whatever the mode); main.js only turns
+// key presses into command ids; ui/debugPanel.js is the small window that lists them.
 // =============================================================================
 
 export const debug = {
-  // Master switch: false = no debug keys and no debug window at all.
-  enabled: true,
+  // How debug mode is switched on (see above).
+  mode: { inDev: true, urlFlag: 'debug' },
+
+  // Within debug mode: the debug keys and the debug window.
+  keys: true,
 
   // Show the invisible marker objects (zombie spawns = red pillars, wall buys = green boxes).
   showMarkers: false,
 
-  // Build the open movement test range (src/maps/testRange/). The `arena` command (T) teleports there and back.
+  // Within debug mode: build the test range (src/maps/testRange/). The `arena` command (T) teleports there and back.
   testArena: true,
 
   // THE DEBUG KEYS: one entry per command. { id, key (KeyboardEvent.code), shift (needs Shift held; default false),
@@ -66,10 +75,21 @@ export const debug = {
     // Health uses the round-1 zombie health from economy.js, so kills feel like the real thing.
   },
 
+  // THE SHOOTING GALLERY (maps/testRange/gallery.js): a hall through the test range's north wall. Targets at these distances (metres from
+  // the firing line), each with a sign; F at the counter sets the round their health (and the guns' round scaling) is taken from.
+  // A shot counts toward the target you aimed nearest (within aimCone degrees of the crosshair); a target hit in a tick = one hit shot.
+  gallery: {
+    distances: [5, 10, 15, 20, 30, 40],
+    lanes: [-5, 5, -3, 3, -1, 1], // each target's sideways offset (metres), so no target hides another from the firing line
+    rounds: [1, 5, 10, 15, 20, 25, 30, 35, 40], // the counter steps through these
+    aimCone: 6,
+    readoutHits: 6, // the readout lists this many latest hits
+  },
+
   // The debug window: starts open or closed, and how often its numbers refresh (seconds).
   panel: { startOpen: false, refreshSeconds: 0.25 },
 
-  // Expose game objects as window.__mall for poking at in the browser console.
+  // Within debug mode: expose game objects as window.__mall (the browser console, and every agent's browser check).
   exposeToWindow: true,
 };
 

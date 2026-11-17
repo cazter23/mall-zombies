@@ -1804,6 +1804,32 @@ kbd {
   pointer-events: none;
   user-select: none;
 }
+/* The shooting gallery's readout (debug mode, ui/rangeReadout.js): left side, clear of the HUD's corners. */
+.range-readout {
+  position: fixed;
+  top: 150px;
+  left: 16px;
+  z-index: 40;
+  width: min(420px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 2px solid #ffd23f;
+  box-shadow: 4px 4px 0 #392940;
+  background: rgba(28, 22, 33, 0.9);
+  color: #f4ebd6;
+  font: 11px/1.4 var(--font-ui);
+  pointer-events: none;
+  user-select: none;
+}
+.range-readout[hidden] { display: none; }
+.range-readout table { width: 100%; border-collapse: collapse; }
+.range-readout td { padding: 1px 4px 1px 0; white-space: nowrap; }
+.range-readout .range-head td { color: #b5e1cf; font-weight: bold; }
+.range-readout .range-kill td { color: #ffd23f; }
+.range-title { color: #ffd23f; font-weight: bold; font-size: 12px; }
+.range-gun { margin-bottom: 4px; }
+.range-section { margin-top: 6px; color: #b5e1cf; text-transform: uppercase; letter-spacing: 0.06em; }
+.range-hint { margin-top: 6px; opacity: 0.75; }
 .debug-panel.show {
   display: block;
 }

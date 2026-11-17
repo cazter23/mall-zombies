@@ -34,7 +34,9 @@ import { scopeOverlay } from './weapons/scope.js';
 import { createPlayerBody } from './player/body.js';
 import { connectWardrobeAppearance } from './player/wardrobeAppearance.js';
 import { createSound } from './audio/sound.js';
-import { createSettings, hasSavedSettings } from './game/settings.js';
+import { createSettings, hasSavedSettings, readSavedSetting } from './game/settings.js';
+import { debugModeOn } from './game/debugMode.js';
+import { createRangeReadout } from './ui/rangeReadout.js';
 import { settingPresets } from './config/settings.js';
 import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createControlsMenu } from './ui/controlsMenu.js';
@@ -148,6 +150,12 @@ const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter
 });
 const postProcessing = createPostProcessing({ renderer, scene, camera, viewmodel });
 
+// DEBUG MODE (config/debug.js): off for players; on for the dev server, an address ending in ?debug, or the saved Settings switch.
+// Decided once, here: the test range is built with the map.
+const debugOn = debugModeOn({ dev: import.meta.env.DEV, search: location.search, saved: readSavedSetting('debugMode') });
+const debugKeys = debugOn && debug.keys; // (the debug keys and window)
+if (debugOn) console.log('Debug mode is on: the ` key lists the debug keys.');
+
 const g = createGame({
   skinSave,
   guideSave,
@@ -157,7 +165,7 @@ const g = createGame({
   hud,
   sound,
   viewmodel,
-  buildTestRange: debug.testArena ? buildTestRange : null,
+  buildTestRange: debugOn && debug.testArena ? buildTestRange : null,
   debugTick: handleDebugKeys,
   // Free the mouse as soon as you die, so it's usable by the time the results screen appears
   // (browsers refuse to re-lock the pointer for about a second after it's released).
@@ -217,7 +225,7 @@ const DEG_TO_RAD = Math.PI / 180;
 const browserOnly = new Set(['panel', 'benchmark']); // (handled by the keydown listener below, on any screen)
 const debugCodes = [...new Set(debug.commands.filter((c) => !browserOnly.has(c.id)).map((c) => c.key))];
 function handleDebugKeys() {
-  if (!debug.enabled) return;
+  if (!debugKeys) return;
   const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
   for (const code of debugCodes) {
     if (!input.consumePress(code)) continue;
@@ -257,9 +265,12 @@ const autoGraphics = createAutoGraphics({
   },
 });
 const settingsMenu = createSettingsMenu(settings);
-const controlsMenu = createControlsMenu();
+const controlsMenu = createControlsMenu({ debugKeys });
 // The debug window (the ` key): lists the debug keys with live numbers; hidden unless the game's debug state says so.
-const debugPanel = debug.enabled ? createDebugPanel({ status: () => g.debug.status() }) : null;
+// The shooting gallery's readout (debug mode: the test range, maps/testRange/gallery.js).
+const rangeReadout = g.arena?.gallery ? createRangeReadout() : null;
+if (rangeReadout) document.body.appendChild(rangeReadout.element);
+const debugPanel = debugKeys ? createDebugPanel({ status: () => g.debug.status() }) : null;
 if (debugPanel) {
   document.body.appendChild(debugPanel.element);
   window.addEventListener('keydown', (e) => {
@@ -700,6 +711,7 @@ function render(alpha, frameTime) {
   const menuLabels = { confirm: buttonLabel('menuConfirm'), back: buttonLabel('menuBack'), move: buttonLabel('menuMove'), switch: buttonLabel('menuSwitch') };
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
+  rangeReadout?.update(game.running && !game.over && g.arena?.inGallery?.(player.position) ? g.arena.gallery.view : null); // (debug mode: the test range's gallery)
   hud.setBagDrop(game.over ? null : g.bagDrops.status);
   const objectiveArea = ui.startObjective.until;
   // The line under the round box: the shutter until the Hallway is owned, then (Directed only) Closing Time's next step.
@@ -795,7 +807,7 @@ const idleSaver = createIdleSaver({
     && (autoGraphics.done || !(document.visibilityState === 'visible' && document.hasFocus())),
 });
 
-if (debug.exposeToWindow) {
+if (debugOn && debug.exposeToWindow) {
   window.__mall = {
     THREE, scene, camera, renderer, postProcessing, map, world: map, colliders: g.colliders, arena: g.arena, player, stats: g.stats, input, game,
     hud, gun, effects, viewmodel, shootables: g.shootables, body, zombies, health, melee, runStats: g.runStats, death, resetRun,

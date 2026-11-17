@@ -1,6 +1,7 @@
 // The debug keys (config/debug.js `commands` -> game/debugCommands.js): one table of keys, run as plain functions on the
 // real game. Checked: the table (unique keys, none clashing with gameplay, every id implemented), every command's effect
 // in the real game/mall, god mode and the window state surviving Play again, and the debug window (ui/debugPanel.js).
+// Also DEBUG MODE (game/debugMode.js): off for players, and the mall's light does not depend on the test range it builds.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { headlessGame } from './helpers/headlessGame.js'; // (first: it stubs the browser globals)
@@ -14,6 +15,8 @@ import { upgrades } from '../src/config/upgrades.js';
 import { createDebugCommands } from '../src/game/debugCommands.js';
 import { createDebugPanel } from '../src/ui/debugPanel.js';
 import { buildTestRange } from '../src/maps/testRange/testRange.js';
+import { debugModeOn } from '../src/game/debugMode.js';
+import * as THREE from 'three';
 
 const WALL_GUNS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 
@@ -260,4 +263,34 @@ test('the debug window lists every key by group, shows/hides with the game state
   assert.equal(panel.visible, false);
   assert.equal(panel.element.getAttribute('aria-hidden'), 'true');
   assert.ok(!panel.element.classList.contains('show'));
+});
+
+test('debug mode is off for players: on only for the dev server, an address with ?debug, or the saved Settings switch', () => {
+  assert.equal(debugModeOn(), false, 'a player opening the game');
+  assert.equal(debugModeOn({ dev: false, search: '?nowarmup', saved: false }), false, 'other address flags are not it');
+  assert.equal(debugModeOn({ dev: true }), debug.mode.inDev, 'the dev server');
+  assert.equal(debugModeOn({ search: `?${debug.mode.urlFlag}` }), true, '?debug');
+  assert.equal(debugModeOn({ search: `?nowarmup&${debug.mode.urlFlag}` }), true, 'with other flags');
+  assert.equal(debugModeOn({ saved: true }), true, 'the Settings switch');
+  assert.equal(debugModeOn({ saved: 'yes' }), false, 'only a real saved true');
+});
+
+test('the mall is lit the same with or without the test range: the sky lights are the mall\'s, the range lamp stops short', () => {
+  const withRange = headlessGame({ buildTestRange }); // (as main.js does in debug mode)
+  const without = headlessGame(); // (debug mode off: no range)
+  const skyLights = (root) => { const out = []; root.traverse((o) => { if (o.isHemisphereLight) out.push(o); }); return out; };
+  assert.equal(skyLights(without.g.map.group).length, 2, 'the mall carries both sky lights itself (its sky and the steady fill)');
+  assert.equal(skyLights(withRange.g.arena.group).length, 0, 'the range adds no sky light of its own');
+  assert.equal(without.g.arena, null);
+  // The range's lamps reach only the range: none gets to the nearest of the mall's walls and floors (its solid boxes; the
+  // ground plane round the parking lot reaches out under the range, and its far corner can catch the lamp's edge: it always could).
+  withRange.g.arena.group.traverse((o) => {
+    if (!o.isPointLight) return;
+    const at = o.getWorldPosition(new THREE.Vector3());
+    const nearest = Math.min(...without.g.colliders.map((box) => box.distanceToPoint(at)));
+    assert.ok(o.distance > 0, 'a range lamp has a reach');
+    assert.ok(nearest > o.distance, `the range lamp stops ${(nearest - o.distance).toFixed(1)} m short of the mall`);
+  });
+  withRange.g.map.dispose();
+  without.g.map.dispose();
 });

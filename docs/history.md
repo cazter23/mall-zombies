@@ -1,5 +1,23 @@
 # Sunset Galleria: build history ("Current state")
 
+## 17 November 2026 - Debug mode, and the test range's shooting gallery (`claude/test-range`, stage 1 of 5)
+
+The debug keys, the test range and window.__mall were always on, and the test range dated from 12 October. Stage 1 of the test range
+plan (the user chose all five: 1 the gallery, 2 an armory bench, 3 a zombie pen, 4 a movement course for today's moves, 5 a back-of-house look):
+- **Debug mode** (config/debug.js `mode`, game/debugMode.js): off for players. On for the dev server (`npm run dev`), an address ending in
+  `?debug` (the built game, the single file, `npm run preview` for a browser check), or Settings > Debug > Debug mode (read when the game
+  opens). It turns on the keys and window, the test range and window.__mall. Runs that use a debug command were already kept out of
+  every record (state.assisted: career stats, skin challenges, the Survival Guide, Lost and Found; the receipt says DEBUG RUN).
+- **The mall's light no longer depends on the range.** The range carried its own sky light (0.9, steadier and brighter than the mall's
+  0.52), and a sky light lights the whole scene: every look since October was made with it on. It is now the mall's `fill`
+  (config/environment.js), unchanged, and the range's lamp has a 50 m reach. Noticed, not changed: the fill does not follow the dusk or
+  the horror layer's darkness, so it softens both.
+- **The shooting gallery** (maps/testRange/gallery.js, ui/rangeReadout.js): a hall through the range's north wall, targets at 5, 10, 15,
+  20, 30 and 40 m, a counter that sets their round (health and round scaling: rounds 1 to 40), and a readout: each hit's damage, head or
+  body, distance and the share the range left; your hit rate at each distance; each kill's hit shots and time. (Hip-firing the Rivet
+  Rifle at 40 m in the first check: 0 of 8. That is its hip spread, and the kind of thing the gallery is for.)
+- Dummies now carry a round and a maxHealth (the Return to Sender's instant kill reads maxHealth).
+
 ## 15 November 2026 - Build-A-Blaster guns you can see (`claude/bab-visible`)
 
 A check of every gun in first person found the finished-build look easy to miss or wrong on several guns. Now:

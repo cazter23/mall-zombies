@@ -196,6 +196,8 @@ export function createGame({
     onReloadTap: () => gun.requestReload(), // controller X tapped next to a buyable: it was a reload
     onPurchase: (purchase) => events.emit('purchase', purchase),
   });
+  // The test range's shooting gallery (debug mode): shots for its hit rate, the gun in hand for the falloff, its round counter's prompts.
+  arena?.connect?.({ events, player, gun, interactions });
   // Buying a door is a moment (game/doorOpenings.js announces it: the area, each barrier going up and clunking home;
   // the PA welcome, sounds, dust, glow and rumble listen). Its sounds follow the real barrier (game/shutterSounds.js).
   const doorOpenings = createDoorOpenings({ events, doors: map.doors, zones: map.zones, player });

@@ -177,13 +177,15 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
   docs/history.md, tests.md and folder-structure.md merge with git's union driver (.gitattributes): a merge keeps both sides' lines and never conflicts there; after a merge, glance at the file for a doubled line.
 - **Windows shell:** complicated quoting in Bash heredocs fails; write scripts with the file tools. Line endings are mixed (CRLF and LF): an edit script must keep each file's own.
 - **Canvas fonts / typefaces:** every sign, poster and label in the 3D world asks for a ROLE (config/typefaces.js: roles, families, sign kinds) through `world/typeKit.js` (`fontFor`, `drawType`); never write a raw font string (tests/typefaces.test.js fails on one). Fonts are bundled locally (src/fonts/, no network, they work in the single-file build): a new family = its .woff2 in src/fonts/files + an entry in `families` + `node tools/buildFontCss.mjs`. `src/boot.js` waits for them before main.js. HUD/menu type (style.css) is separate. The sign table: docs/typefaces.md.
-- **Browser checks:** build first (`npm run build`) and use `npm run preview`; a hidden pane shows stale frames (take two), and its frame times mean nothing
+- **Browser checks:** build first (`npm run build`) and use `npm run preview`, opening the address with `?debug` (DEBUG MODE: without it there
+  is no `window.__mall`, no debug keys and no test range); a hidden pane shows stale frames (take two), and its frame times mean nothing
   (draw calls and triangles still count). `window.__mall` has `step(n)`, `g`, `game.forceRun`; `g.debug.run('doors'|'god')`.
 - **Keep this file small.** It loads in every session. New history goes in docs/history.md, new per-module notes in docs/folder-structure.md, new
   coordinates in docs/map.md, new test descriptions in docs/tests.md; change this file only for rules, commands and the short maps above.
 
-## Movement test range (debug only)
-Built when `debug.testArena` is true (it still is: turn it off before shipping); T teleports there. Layout: docs/folder-structure.md.
+## Debug mode and the test range
+Off for players. On for `npm run dev`, an address ending in `?debug`, or Settings > Debug (config/debug.js `mode`). It turns on the debug
+keys, window.__mall and the test range (T teleports there; its shooting gallery reads out damage, falloff and hit rate). Layout: docs/folder-structure.md.
 
 ## Build order (status, November 2026)
 1-4. Walkable mall, staple gun, Shopper zombies + box cutter, waves/points/doors/wall buys (done)
