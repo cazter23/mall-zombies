@@ -147,7 +147,9 @@ src/
     performance.js      The knobs of the speed-ups and the budgets tests hold the game to (`perf`): collisionGrid (cell size, reach,
                         when a list is sorted), warmup (milliseconds per frame, first batch), drawBudget (the most things a benchmark
                         shot may draw: tests/drawBudget.test.js). Nothing here changes what the game does.
-                        bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
+                        bindings: tests check) + DEBUG MODE (`mode`: on for the dev server, ?debug, or the saved Settings > Debug switch;
+                        game/debugMode.js) and what it turns on: keys (the keys and window), showMarkers, testArena, exposeToWindow; `gallery`
+                        (the shooting gallery's distances, lanes, rounds, aim cone), addPointsAmount, jumpRounds, panel,
                         dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
                         zombie / Shift+Z next type / X clear / K kill all (pays), N next round / Shift+N +5 rounds / L Flash Sale,
                         P +5000 / ' points to 0, B god mode / H next wall gun / U free tier, O all doors / T test range / Shift+T Level 2, ` window,
@@ -773,6 +775,7 @@ src/
       fryerHazard.js    Feature kind 'fryerHazard': Food Court Corn Dog Corral counter fryer valve switch; vents superheated oil across the counter apron (`x: 2.5..9.0, z: -13.0..-6.5`), pulsing scalding oil bursts (source 'hazard') and slipping zombies (`applySlip`). Dark oil slick with a bright rim, popping bubbles, boiling vats, steam. Emits 'fryerKill' for each killing blow.
       sprinklerHazard.js Feature kind 'sprinklerHazard': Main Hallway south wall fire alarm pull station (`(-6.6, 1.25, -1.95)`, between Kevin's cart and the planter); drenches the concourse (`x: -12..12, z: -2..6`), chilling (`applySlow`) and soaking (`applyVulnerable`) zombies, bosses, and Mascots (`source: 'hazard'`). Ceiling heads always there; falling drops and splash rings while it sprays. Emits 'sprinklerKill' for each killing blow.
       paLureHazard.js   Feature kind 'paLureHazard': Service Corridor west wall paging panel switch (`(-23.1, 1.35, -4.5)`); broadcasts a clearance chime (`10 m` radius around `(-21.5, -4.5)`), holding normal zombies with `applyHold` before a final feedback pop (`source: 'hazard'`). Speaker horn always mounted; sound waves out to its real reach and a spinning sale tag over each held shopper. Emits 'paLureKill' for each killing blow.
+    debugMode.js        debugModeOn({ dev, search, saved }): is debug mode on? (main.js asks once, when the page opens). Pure.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
@@ -998,8 +1001,11 @@ src/
                         edge and a ceiling cove, the hallway cornice, floor bands and medallions, panel pools and neon reflections (two
                         glow meshes in all), ceiling fixtures, fountain, ATM, fire pulls, urns, kiddie ride, gumball, stories, campaign.
     mall/setPieces.js   One signature scene per area (dead arcade cabinets in the hallway, and so on).
-    testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
-                        dummy.js practice mannequins (shootables)
+    testRange/          Debug add-on (not a map; debug mode only): testRange.js buildTestRange(scene, colliders) -> { group, playerSpawn,
+                        contains, shootables, gallery, inGallery, connect, update }, one lamp of limited reach (the mall's sky lights
+                        light it), dummy.js practice mannequins (shootables; round, maxHealth, setRound, onHit),
+                        gallery.js the SHOOTING GALLERY's numbers (createGallery: each hit's damage / part / distance / falloff, hit rate
+                        by distance, a kill's hit shots and time, the round counter's two prompts; connected by createGame: arena.connect)
   audio/
     sound.js            createSound({ context, recipes, reverb }): Web Audio synth for config/audio.js recipes. play(name, { volume, pan,
                         pitch, step, variant, at }) -> { stop() } | null: one VOICE per play (layers -> parts -> drive -> volume -> pan ->
@@ -1257,11 +1263,12 @@ src/
                         Esc / Back / B closes. padNav(input) (core/menuNav.js): up/down move, left/right change (held: they
                         repeat; on the footer they walk its buttons), A toggles, LB/RB tabs, B / Start back
                         (main.js routes controller input to it while it's open)
+    rangeReadout.js     createRangeReadout(): the shooting gallery's readout panel (debug mode): draws gallery.view while you play in it.
     debugPanel.js       createDebugPanel({ status }): the small read-only debug window (the ` key): every debug key by group, live
                         round / points / enemies / sale, selected spawn type, next gun, god mode and active boss.
                         Commands are grouped into columns with a responsive layout; the last result stays at the bottom.
                         Visibility is mirrored to aria-hidden. The overlay never takes clicks.
-    controlsMenu.js     createControlsMenu(): the Controls screen (pause screen > Controls, controller X): tabs Keyboard & mouse /
+    controlsMenu.js     createControlsMenu({ debugKeys }): the Controls screen (pause screen > Controls, controller X): tabs Keyboard & mouse /
                         Controller, each as a Diagram (default) or List (controller Y toggles), from `controlsHelp` (config/controls.js:
                         { keys, text, short, anchors }; update it when bindings change) + debug-key hints
     controlsDiagram.js  buildControlsDiagram(device, entries): SVG keyboard + mouse / controller; colored labels placed AROUND the
@@ -1389,14 +1396,22 @@ src/
   Rivet Rifle, Heavy Coil Nailer and Barcode Scanner; prices in economy.wallBuys via g.pricing.
 
 ## The movement test range (debug only; moved from CLAUDE.md)
-- Built when `debug.testArena` is true; press **T** in-game to teleport between the mall and the range
-  (`player.teleport({ position, yaw })`). Its colliders go into the same shared `colliders` list.
+- Built in DEBUG MODE (config/debug.js `mode`: the dev server, an address ending in ?debug, or Settings > Debug, which takes effect
+  the next time the game opens) when `debug.testArena` is true; press **T** in-game to teleport between the mall and the range
+  (`player.teleport({ position, yaw })`). Its colliders go into the same shared `colliders` list. Using T (any debug command but the
+  window and the two selectors) marks the run assisted: no records.
+- Light: one lamp with a 50 m reach; the mall's two sky lights (config/environment.js hemisphere + fill) reach everywhere. The fill was
+  the range's own sky light until 17 November 2026 (it lit the whole mall), so the mall looks the same with or without the range.
 - 60x60m open floor centered at (0, -100), far south of the mall, 2m border walls, 1m floor tiles.
 - Shooting range: 5 practice dummies (3 at local z=17 near spawn, 2 at (+-9, 0)) with round-1 zombie health.
 - Contents: runway with a line every 5m; slide bars + an 8m low tunnel (underside 1.2m: crouch fits,
   standing doesn't); pillars; stairs (0.5m steps) to a 2m platform; jump boxes 0.3-1.2m (1.2 is
   deliberately unreachable); 0.6m platforms with 2/3/4/5m gaps for sprint-jumps.
-- Turn `debug.testArena` off before shipping. Don't build game features into it.
+- THE SHOOTING GALLERY (gallery.js): through a 14 m opening in the north wall, a hall 54 m deep with 3 m walls and a backstop. A firing
+  line at local z -32 with a counter (F: easier / harder targets: the round their health and round scaling stand in for, stepping through
+  config/debug.js gallery.rounds; it clears the numbers), floor lines every 5 m, targets at gallery.distances (5 to 40 m), staggered
+  sideways (gallery.lanes) so none hides another, each with a distance sign. The readout (ui/rangeReadout.js) shows while you play in it.
+- Players never see any of this: debug mode is off unless switched on. Don't build game features into it.
 
 ## Notes by system
 

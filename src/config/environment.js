@@ -1,6 +1,10 @@
 // Cosmetic-only atmosphere. Never read by combat, navigation or purchase logic.
 export const atmosphere = {
   hemisphere: { sky: 0x9bb8d4, ground: 0x524658, intensity: 0.52 },
+  // A second, steady sky light (maps/mall/mall.js). Until 17 November 2026 it belonged to the debug test range, and since a sky light
+  // lights the whole scene it lit the mall too: every look was tuned with it on. It moved here so the mall looks the same with debug
+  // mode off. It does not follow the dusk or the horror layer (it never did).
+  fill: { sky: 0xfff6e6, ground: 0xb8c2cc, intensity: 0.9 },
   sun: { color: 0xdceeff, intensity: 0.28 },
   roomLights: {
     hallway: { color: 0xcce6ff, intensity: 22, distance: 22 },

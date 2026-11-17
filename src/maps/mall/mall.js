@@ -779,6 +779,7 @@ export function buildMall(scene, colliders) {
   // All lights live in the map's group, so unloading the map removes them too.
   const skyLight = new THREE.HemisphereLight(atmosphere.hemisphere.sky, atmosphere.hemisphere.ground, atmosphere.hemisphere.intensity);
   group.add(skyLight);
+  group.add(new THREE.HemisphereLight(atmosphere.fill.sky, atmosphere.fill.ground, atmosphere.fill.intensity)); // (config/environment.js fill)
 
   // The sun goes down over a run (config/look.js dusk; the horror director calls this with 0..1 each round): the sky light,
   // the Atrium skylight and sun shafts, and the parking sky go from golden hour to a purple night. Colours only.

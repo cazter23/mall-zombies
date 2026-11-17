@@ -28,6 +28,15 @@ export function hasSavedSettings() {
   }
 }
 
+/** One saved setting as it was last saved, before the settings are created (debug mode is decided first: game/debugMode.js). */
+export function readSavedSetting(id) {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY))?.[id];
+  } catch {
+    return undefined; // no storage / corrupt data
+  }
+}
+
 export function createSettings(ctx) {
   const values = {};
   const listeners = [];

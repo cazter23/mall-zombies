@@ -39,7 +39,7 @@ import { closingTime } from './closingTime.js';
 import { spatialAudio } from './spatialAudio.js';
 import { arenas } from './arenas.js';
 
-export const settingsTabs = ['Graphics', 'Mouse', 'Controller', 'Audio', 'Comfort'];
+export const settingsTabs = ['Graphics', 'Mouse', 'Controller', 'Audio', 'Comfort', 'Debug'];
 // receiptGuardSeconds: the receipt comes up by itself with its first button focused; for this long a key or controller press
 // does nothing (a jump still being tapped must not Play again, or Clock out for good). A mouse click always counts.
 export const menuFeel = { confirmSeconds: 3, receiptGuardSeconds: 0.8 };
@@ -347,6 +347,14 @@ export const settingDefs = [
     id: 'stragglerHelper', tab: 'Comfort', label: 'Last-zombie tracker (outline & minimap ping)', type: 'toggle',
     default: true,
     apply: (v) => { feel.stragglers.enabled = v; },
+  },
+  {
+    // DEBUG MODE (config/debug.js, game/debugMode.js): the debug keys and window, and the test range. Read when the game opens, so
+    // switching it takes effect next time; a run that uses a debug command is not filed in any record.
+    id: 'debugMode', tab: 'Debug', label: 'Debug mode',
+    hint: 'Cheat keys (the ` key lists them) and the test range (T). Takes effect the next time you open the game. A run that uses a cheat is not recorded.',
+    type: 'toggle', default: false,
+    apply: () => {},
   },
 ];
 

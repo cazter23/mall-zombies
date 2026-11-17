@@ -31,7 +31,9 @@ const SHAPE = {
   flashSeconds: 0.06,
 };
 
-export function createDummy({ parent, colliders, position, health }) {
+// round: the round it stands in for (a gun with round scaling reads it: weapons/gunStats.js); onHit(info, dummy): every hit it takes,
+// { damage, part, distance, weaponId, killed } (the shooting gallery's readout: maps/testRange/gallery.js).
+export function createDummy({ parent, colliders, position, health, round = 1, onHit = null }) {
   const d = debug.dummies;
 
   // The pivot sits at the feet so the dummy tips over around its base.
@@ -118,13 +120,30 @@ export function createDummy({ parent, colliders, position, health }) {
     get health() {
       return hp;
     },
+    get maxHealth() {
+      return health;
+    },
+    get round() {
+      return round;
+    },
+    /** Stand in for another round: this health, back up and full at once. */
+    setRound(nextRound, nextHealth) {
+      round = nextRound;
+      health = nextHealth;
+      hp = health;
+      state = 'up';
+      timer = 0;
+      setBar(1);
+    },
 
-    takeHit({ damage }) {
+    takeHit({ damage, part = 'body', distance = null, weaponId = null }) {
       if (state !== 'up') return { killed: false };
       hp = Math.max(0, hp - damage);
       flash = S.flashSeconds;
       setBar(hp / health);
-      if (hp > 0) return { killed: false };
+      const killed = hp <= 0;
+      onHit?.({ damage, part, distance, weaponId, killed }, this);
+      if (!killed) return { killed: false };
       state = 'falling';
       timer = 0;
       return { killed: true };

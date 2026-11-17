@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { controlsHelp } from '../config/controls.js';
-import { debug, keyLabel } from '../config/debug.js';
+import { keyLabel } from '../config/debug.js';
 import { buildControlsDiagram } from './controlsDiagram.js';
 import { createModal } from './modal.js';
 import { menuNav, scrollPage, TICK } from './menuFocus.js';
@@ -24,7 +24,7 @@ const TABS = [
   ['gamepad', 'Controller'],
 ];
 
-export function createControlsMenu() {
+export function createControlsMenu({ debugKeys = false } = {}) {
   const root = el('div', 'settings hidden');
   const card = el('div', 'settings-card controls-card');
   const tabBar = el('div', 'settings-tabs');
@@ -39,7 +39,7 @@ export function createControlsMenu() {
 
   // Debug hints (only for the debug features that are switched on).
   // The debug keys are a table (config/debug.js) listed in the debug window (ui/debugPanel.js): just point at it.
-  if (debug.enabled) {
+  if (debugKeys) { // (debug mode with its keys: main.js)
     const hint = `${keyLabel('Backquote')} shows the debug window listing every debug key`;
     card.append(el('p', 'controls-debug', `Debug: ${hint}`));
   }

@@ -11,11 +11,14 @@
 //   - Center: pillars to strafe around, and stairs up to a 2m platform
 //   - East:   jump boxes of increasing height, and platforms with growing gaps
 //   - Near spawn: shooting range with practice dummies (3 close, 2 far)
+//   - North, through the wall: the SHOOTING GALLERY (gallery.js): targets at 5 to 40 m, a counter that sets their round, a readout
 // =============================================================================
 
 import * as THREE from 'three';
 import { makeTileTexture, makeSignTexture } from '../../world/textures.js';
 import { createDummy } from './dummy.js';
+import { createGallery } from './gallery.js';
+import { debug } from '../../config/debug.js';
 import { zombieHealthForRound } from '../../config/economy.js';
 
 const ARENA = {
@@ -26,6 +29,12 @@ const ARENA = {
   lowBarBottom: 1.2, // underside of slide bars/tunnel: above crouch (1.1), below standing (1.8)
   lowBarTop: 1.5,
 };
+
+// The gallery hall, range-local metres: through an opening in the north wall (half-width), this deep, these walls; the firing line
+// (a counter in the middle, F sets the targets' round) just inside. Targets stand config/debug.js gallery.distances beyond it.
+const HALL = { halfWidth: 7, depth: 54, wallHeight: 3, firingLine: -32, counter: { halfWidth: 1.5, depth: 0.5, height: 1.0 } };
+
+const RANGE_LIGHT_REACH = 50; // metres: the range's lamp lights nothing further away (the range's far corners are 43 m off)
 
 const COLORS = {
   wall: 0x6c7a89,
@@ -87,7 +96,8 @@ export function buildTestRange(scene, colliders) {
 
   const H = ARENA.wallHeight;
   const wall = mat(COLORS.wall);
-  box(-S - T, 0, -S - T, S + T, H, -S, wall); // north
+  box(-S - T, 0, -S - T, -HALL.halfWidth, H, -S, wall); // north, west of the gallery's opening
+  box(HALL.halfWidth, 0, -S - T, S + T, H, -S, wall); // north, east of it
   box(-S - T, 0, S, S + T, H, S + T, wall); // south
   box(-S - T, 0, -S, -S, H, S, wall); // west
   box(S, 0, -S, S + T, H, S, wall); // east
@@ -175,10 +185,49 @@ export function buildTestRange(scene, colliders) {
   );
   label('SHOOTING RANGE', 0, 2.9, 17.6, 4, 0.8);
 
+  // --- North: the shooting gallery (gallery.js) -------------------------------------
+  // A walled hall through the north wall, lit by the mall's sky lights (no lamps of its own: a lamp costs every lit surface in
+  // the scene). Floor lines every 5 m from the firing line; a sign over each target; the counter on the firing line.
+  const G = debug.gallery;
+  const hallEnd = -S - HALL.depth;
+  const hallFloor = makeTileTexture({ base: '#d3dbe2', grout: '#93a1ad', variation: 8, seed: 6 });
+  hallFloor.repeat.set(HALL.halfWidth * 2, HALL.depth); // (1 m tiles here too)
+  box(-HALL.halfWidth, -0.2, hallEnd, HALL.halfWidth, 0, -S, new THREE.MeshStandardMaterial({ map: hallFloor, roughness: 0.5 }));
+  box(-HALL.halfWidth - T, 0, hallEnd, -HALL.halfWidth, HALL.wallHeight, -S - T, wall); // west wall
+  box(HALL.halfWidth, 0, hallEnd, HALL.halfWidth + T, HALL.wallHeight, -S - T, wall); // east wall
+  box(-HALL.halfWidth - T, 0, hallEnd - T, HALL.halfWidth + T, HALL.wallHeight + 1, hallEnd, mat(COLORS.post)); // the backstop
+  label('SHOOTING GALLERY  ·  F AT THE COUNTER: TARGET ROUND', 0, 2.5, -S + 0.6, 9, 0.7, '#3b2f44', '#ffd23f');
+  const fl = HALL.firingLine;
+  box(-HALL.halfWidth, 0, fl - 0.06, HALL.halfWidth, 0.012, fl + 0.06, mat(COLORS.startLine), { collide: false });
+  for (let d = 5; fl - d > hallEnd + 1; d += 5) {
+    box(-HALL.halfWidth, 0, fl - d - 0.04, HALL.halfWidth, 0.01, fl - d + 0.04, mat(COLORS.stripe), { collide: false });
+  }
+  const C = HALL.counter;
+  box(-C.halfWidth, 0, fl - C.depth, C.halfWidth, C.height, fl, mat(COLORS.post)); // the counter (vaultable height)
+  label('ROUND -', -0.75, C.height + 0.3, fl + 0.02, 1.2, 0.35);
+  label('ROUND +', 0.75, C.height + 0.3, fl + 0.02, 1.2, 0.35);
+  const galleryTargets = G.distances.map((distance, i) => {
+    const x = G.lanes[i] ?? 0;
+    const z = fl - distance;
+    label(`${distance} m`, x, 2.5, z + 0.3, 1.4, 0.5);
+    return {
+      distance,
+      dummy: createDummy({
+        parent: group, colliders, position: new THREE.Vector3(cx + x, 0, cz + z), health: zombieHealthForRound(1),
+        onHit: (info, dummy) => gallery.onHit(info, dummy),
+      }),
+    };
+  });
+  const gallery = createGallery({ targets: galleryTargets, cfg: G, healthFor: zombieHealthForRound });
+  const counterAt = (x) => new THREE.Vector3(cx + x, C.height + 0.1, cz + fl + 0.05);
+  const counter = { easier: counterAt(-0.75), harder: counterAt(0.75), normal: new THREE.Vector3(0, 0, 1) };
+  const inGallery = (pos) => Math.abs(pos.x - cx) <= HALL.halfWidth + T && pos.z - cz <= -S && pos.z - cz >= hallEnd - T;
+
   // --- Lighting ------------------------------------------------------------------
-  // Its own lights (it must not depend on the map's).
-  group.add(new THREE.HemisphereLight(0xfff6e6, 0xb8c2cc, 0.9));
-  const fill = new THREE.PointLight(0xffffff, 60, 0, 1.5);
+  // The mall's sky lights reach everywhere (they are hemisphere lights), so the range is lit like the mall. Its own lamp has a
+  // reach (RANGE_LIGHT_REACH) that stops well short of the mall, 76 m away: the mall looks the same with or without the range.
+  // (Until 17 November 2026 the range carried a sky light of its own, which lit the whole mall: it is the mall's `fill` now.)
+  const fill = new THREE.PointLight(0xffffff, 60, RANGE_LIGHT_REACH, 1.5);
   fill.position.set(cx, 12, cz);
   group.add(fill);
 
@@ -187,12 +236,20 @@ export function buildTestRange(scene, colliders) {
     // Spawn at the south edge, facing north (-Z) toward everything.
     playerSpawn: { position: new THREE.Vector3(cx, 0, cz + S - 3), yaw: 0 },
     contains(pos) {
-      return Math.abs(pos.x - cx) <= S + T && Math.abs(pos.z - cz) <= S + T;
+      return (Math.abs(pos.x - cx) <= S + T && Math.abs(pos.z - cz) <= S + T) || inGallery(pos);
     },
     // Things the player can shoot (see weapons/hitscan.js)
-    shootables: dummies,
+    shootables: [...dummies, ...galleryTargets.map((t) => t.dummy)],
+    // The shooting gallery (gallery.js): `inGallery(pos)` (the readout shows there), and connect() once the game exists.
+    gallery,
+    inGallery,
+    connect({ events, player, gun, interactions }) {
+      gallery.connect({ events, player, gun, interactions, counter });
+    },
     update(dt) {
       for (const dummy of dummies) dummy.update(dt);
+      for (const { dummy } of galleryTargets) dummy.update(dt);
+      gallery.update(dt);
     },
   };
 }
