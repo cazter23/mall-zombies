@@ -1,4 +1,4 @@
-// The Grand Atrium (maps/mall/atrium.js) in the real game: its 1500 gate off the hallway, sealed until bought, the open court
+// The Grand Atrium (maps/mall/atrium.js) in the real game: its gate off the hallway (economy.doors.atrium), sealed until bought, the open court
 // round the fountain, the upper ring with its railings, the second escalator, and the shutter link to the level 2 Promenade.
 import test from 'node:test';
 import assert from 'node:assert/strict';

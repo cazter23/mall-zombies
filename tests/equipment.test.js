@@ -1,4 +1,4 @@
-// Kiosk Kevin phase 1 (docs/kiosk-kevin-plan.md): the two equipment pockets, their buttons and the Soda Bomb (game/equipment.js,
+// Kiosk Kevin phase 1 (docs/archive/kiosk-kevin-plan.md): the two equipment pockets, their buttons and the Soda Bomb (game/equipment.js,
 // game/equipment/equipmentDamage.js, config/kiosk.js), in the REAL game (tests/helpers/headlessGame.js). Checked: real input on the
 // keyboard and controller codes throws from the right pocket; no throw while switching, vaulting, swinging, in a menu, mid-throw or
 // dead; a throw blocks the gun and cancels a reload; the bottle bounces off zombies without hurting them; the blast pays only through

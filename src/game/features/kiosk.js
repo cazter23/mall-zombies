@@ -1,5 +1,5 @@
 // =============================================================================
-// KIOSK KEVIN'S CART (map feature kind 'kiosk'; numbers in config/kiosk.js; the plan: docs/kiosk-kevin-plan.md).
+// KIOSK KEVIN'S CART (map feature kind 'kiosk'; numbers in config/kiosk.js; the plan: docs/archive/kiosk-kevin-plan.md).
 // Kevin sells three products a block (g.pricing 'kiosk') from the opening round, while his site's zone is open: a Lethal slot
 // (Soda Bomb / Sparkler Cake / Sentry), Bubble Wrap, and a Tactical slot (Air Horn / Glitter Bomb); each slot advances once per
 // `stockEveryRounds` block (config/kiosk.js slots, stockFor). Kevin's Pick (one extra charge or layer) is the product on sale that

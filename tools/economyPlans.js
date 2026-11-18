@@ -81,7 +81,7 @@ export const CLAW_FIRST = [
   ...SENSIBLE.slice(2),
 ];
 // SENSIBLE, and Kiosk Kevin every break from the moment the shutter is open (half of what is in hand after the list): what does Kevin
-// cost the route, what does he give back in survival, and how much does he soak up late (docs/kiosk-kevin-plan.md, phase 7)?
+// cost the route, what does he give back in survival, and how much does he soak up late (docs/archive/kiosk-kevin-plan.md, phase 7)?
 export const KIOSK = [
   ...SENSIBLE.slice(0, 2),
   { type: 'kiosk', share: 0.5, products: ['bubbleWrap', 'sentry', 'sodaBomb', 'sparklerCake', 'glitterBomb', 'airHorn'] },

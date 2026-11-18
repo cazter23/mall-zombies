@@ -162,7 +162,7 @@ test('a rail works the same walking or sprinting: how fast you run at it does no
 });
 
 // (Until 15 November 2026 this asked for the same answer at 60 degrees too. A rail is climbed STRAIGHT over, so a 60 degree run
-// turned you 60 degrees and dropped you off the balcony: the sideways vault (docs/vault-notes.md). Now: the same answer at any
+// turned you 60 degrees and dropped you off the balcony: the sideways vault (docs/archive/vault-notes.md). Now: the same answer at any
 // angle up to 35 degrees, walking, sprinting or from a standstill; at 60 degrees a plain jump, wherever you look.)
 test('the angle you run at a rail (up to 35 degrees), and whether you are moving at all, does not change whether you go over', () => {
   const { g } = fixture();

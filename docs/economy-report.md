@@ -1,6 +1,8 @@
 # Economy report and power-curve proposal
 
-Status: 10 November 2026, measured on main at 7d633bf. **Nothing in this report is applied to the game.** Main has since gained the 20-second
+Status: 10 November 2026, measured on main at 7d633bf. **Applied since: proposals A, C and D** (the Price Gun at 58, Platinum x1.9
+with Renewals 4,000 to 10,000, the claw at 1,500 a grab); **B (the Build-A-Blaster price) is still open** (docs/open-ideas.md). The
+numbers and the "Today" columns below are as measured on 10 November, before those changes. Main has since gained the 20-second
 shopping window (32a16d6: the break between rounds is 20 seconds instead of 10, and can be ended early). That changes no price or payout, so
 income by round stands; round times here are 10 seconds short of it, and one-life survival was not re-measured with the longer break. Sections 1 to 5 are
 measurements; section 6 PROPOSES numbers and waits for approval; section 7 is what the plans that were waiting on this report can take from it.
@@ -21,7 +23,7 @@ bot dies in round 6 and never reaches round 10. Everything past round 14 was mea
 
 **The review's four findings are confirmed** (section 5).
 
-**Proposals** (section 6; none applied):
+**Proposals** (section 6; A, C and D applied since, B open):
 
 | | Today | Proposed | What the bot measured |
 |---|---|---|---|
@@ -353,7 +355,7 @@ One life, the same bot and buy order, 40 runs a set-up (the full table, with the
 | A bot had bought every power upgrade by round 23; rounds 24 to 30 earned about 92,000 and spent about 2,000 | List finished in round 23.1 (23 to 24) over 8 runs. Rounds 24 to 30 earned 93,888; rounds 25 to 30 spent 1,500 | Confirmed |
 | The claw at 1,000 in the hallway is worth more than its price | The first grab wins 1.52x its price in wall value (1.67x with a timed press). The bot's two grabs, the first in round 3, won a Foam Dart Blaster, Rivet Rifle or Coil Nailer 12 times in 16 | Confirmed |
 
-## 6. Proposals (not applied)
+## 6. Proposals (A, C and D applied since; B open)
 
 Four changes were asked for. Each has its numbers in tools/economyPlans.js (PROPOSALS), where the sim applies them in memory only, so
 the "after" columns below were played, not estimated. Read 6.5 before approving any of A or B: they do what was asked, and they cost survival.
@@ -637,7 +639,7 @@ spend in total (the "spendable so far" table in section 3).
   compete with the Rivet Rifle route and Deluxe, and small change by round 10. One item for each of the four slots (3,750 to
   7,250) is about a round of income at round 10. All twelve (16,250) cost about what rounds 11 to 13 pay. The prices are in the right range for
   a round 5 to 12 purchase; nothing here says what an item does for survival (the bot wears a cardigan and a fanny pack and nothing else).
-- **Kiosk Kevin (docs/kiosk-kevin-plan.md).** His stock is 500 to 1,500 and restocks every round, which makes him the repeatable sink
+- **Kiosk Kevin (docs/archive/kiosk-kevin-plan.md).** His stock is 500 to 1,500 and restocks every round, which makes him the repeatable sink
   the late game lacks. At flat prices a buyer past round 15 takes everything he has without noticing (750 is 12% of a round at 15,
   5% at 30), so what limits him late has to be stock, not price, unless his prices climb with the round as his damage already does
   (equipmentPower). Add a kiosk step to the bot (tools/economyPlans.js lists the step types) and replay the baseline in phase 7.
@@ -645,8 +647,8 @@ spend in total (the "spendable so far" table in section 3).
 - **Hazards (docs/archive/hazards-plan.md).** 500 to 750 a trigger with a 25 second cooldown: three or four triggers in a round is half of round
   10's income and a quarter of round 20's. A second cost is hidden: a hazard kill pays the kill value but none of the +10 hits, and
   hits are a quarter to nearly half of income, so each zombie a hazard kills pays about 55 to 115 points less than one shot down.
-- **Build-A-Blaster's placeholder prices** (economy.upgrades.workshop): the ritual and the re-stuff are proposal B. Party Trap and Clearance
-  Rack drop free now, so their 1,500 and 1,000 are unused.
+- **Build-A-Blaster's placeholder prices** (economy.upgrades.workshop): the ritual and the re-stuff are proposal B. (The Party Trap and
+  Clearance Rack it mentioned were removed on 15 November 2026.)
 
 ## 8. What was not checked
 

@@ -24,13 +24,13 @@ once after. `tools/typefaceLedger.mjs before.json after.json` joins them by text
 role font (0 fallbacks of 1333 unique draws), and the call sites the boot run did NOT reach are listed below.
 
 Draw sites not reached by the boot run (runtime-only), checked by reading the code and by the headless tests, not by eye:
-`game/features/clearanceSticker.js` (the dropped sticker), `game/features/retailUnease.js` (CCTV `CAM 01`), `weapons/models/skinPattern.js`
+`game/features/retailUnease.js` (CCTV `CAM 01`), `weapons/models/skinPattern.js`
 (the Doorbuster and Handle With Care skins), `zombies/mascotHeads.js` (price-tag and gold-badge mascot prints). The old text is also
 listed as "not in the after-log" for poster copy that the new, narrower fonts wrap differently (same posters, different line breaks).
 Not text drawn by canvas: the neon tubes (below). Out of scope: `src/ui/minimap.js` (HUD).
 
 ## Decisions made without asking
-- **24 families, not 10-16.** The brief said roughly 10-16; the mall has ~12 store identities (department store, discount mart, toy
+- **25 families, not 10-16.** The brief said roughly 10-16; the mall has ~12 store identities (department store, discount mart, toy
   store, cinema, three food stalls, varsity sports, hardware, computers...) and each wanted its own face, so the palette is larger, ~800 KB of
   woff2. HUD families (Righteous, Teko, Space Grotesk, VT323) are kept because `style.css` uses them. Dropped: Bebas Neue, Silkscreen, Fraunces.
 - **Fonts moved from the Google Fonts link to local files** (the old setup needed the network and the single-file build fell back to system

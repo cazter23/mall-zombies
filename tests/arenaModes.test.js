@@ -1,4 +1,4 @@
-// ARENA SURVIVAL (config/arenas.js, maps/mall/arenas.js, g.setArena; the plan: docs/arena-modes-plan.md): a run locked in one
+// ARENA SURVIVAL (config/arenas.js, maps/mall/arenas.js, g.setArena; the plan: docs/archive/arena-modes-plan.md): a run locked in one
 // part of the mall. Each arena starts in the right place, its exits never open, zombies spawn only there and reach you, its
 // fixtures work, Save & Quit keeps the arena, and a whole-mall run is exactly what it was.
 import test from 'node:test';

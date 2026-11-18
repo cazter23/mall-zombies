@@ -1,8 +1,11 @@
 # Black Ops 1 Zombies source audit for Mall Zombies
 
+> **The COD scripts are not in this repo.** The decompiled scripts this analysis cites (once in `references/`) were removed
+> on purpose in November 2026. Each citation below is kept as plain text, `file`:line, naming the script and line it came from.
+
 ## Scope and confidence
 
-This folder is not a complete dump of Treyarch's stock Zombies scripts or weapon assets. It is a community reconstruction of the BO1 engine, with Zombies-specific behavior recovered from the single-player executable, plus clearly separated community mods. The repository itself describes the project as decompiled engine code ([README](../../references/bo1-zombies-decompiled-main/README.md#L3)), and its setup script expects the owner's original `zone` and `main/*.iwd` data ([setup.ps1](../../references/bo1-zombies-decompiled-main/setup.ps1#L5)). Those missing assets are where the per-gun numbers and much of the stock round/economy logic live.
+This folder is not a complete dump of Treyarch's stock Zombies scripts or weapon assets. It is a community reconstruction of the BO1 engine, with Zombies-specific behavior recovered from the single-player executable, plus clearly separated community mods. The repository itself describes the project as decompiled engine code (README (`README.md`:3)), and its setup script expects the owner's original `zone` and `main/*.iwd` data (`setup.ps1`:5). Those missing assets are where the per-gun numbers and much of the stock round/economy logic live.
 
 I therefore use three confidence levels:
 
@@ -16,53 +19,53 @@ This audit does **not** establish exact BO1 gun damage, wall prices, perk prices
 
 ### 1. A weapon is a performance envelope, not a damage number
 
-The weapon definition format exposes base damage, minimum damage, the beginning and end of falloff, fire time, empty and tactical reload timing, magazine size, reserve capacity, penetration class, movement scale, ADS timing, and sprint-out timing ([weapon fields](../../references/bo1-zombies-decompiled-main/src/bgame/bg_weapons_load_obj.cpp#L441), [damage and falloff](../../references/bo1-zombies-decompiled-main/src/bgame/bg_weapons_load_obj.cpp#L459), [cadence and reload](../../references/bo1-zombies-decompiled-main/src/bgame/bg_weapons_load_obj.cpp#L483), [handling](../../references/bo1-zombies-decompiled-main/src/bgame/bg_weapons_load_obj.cpp#L504)).
+The weapon definition format exposes base damage, minimum damage, the beginning and end of falloff, fire time, empty and tactical reload timing, magazine size, reserve capacity, penetration class, movement scale, ADS timing, and sprint-out timing (weapon fields (`bg_weapons_load_obj.cpp`:441), damage and falloff (`bg_weapons_load_obj.cpp`:459), cadence and reload (`bg_weapons_load_obj.cpp`:483), handling (`bg_weapons_load_obj.cpp`:504)).
 
-BO1 linearly interpolates from base damage to minimum damage between two range thresholds, then applies the bullet's remaining damage multiplier ([Bullet_GetDamage](../../references/bo1-zombies-decompiled-main/src/game/bullet.cpp#L674)). Penetration is also continuous: material depth consumes a fraction of the bullet's multiplier, and the shot ends when that multiplier reaches zero ([penetration loop](../../references/bo1-zombies-decompiled-main/src/game/bullet.cpp#L991), [depth loss](../../references/bo1-zombies-decompiled-main/src/game/bullet.cpp#L1079)). This is a good model for Mall Zombies' `falloff` and `pierce` systems.
+BO1 linearly interpolates from base damage to minimum damage between two range thresholds, then applies the bullet's remaining damage multiplier (Bullet_GetDamage (`bullet.cpp`:674)). Penetration is also continuous: material depth consumes a fraction of the bullet's multiplier, and the shot ends when that multiplier reaches zero (penetration loop (`bullet.cpp`:991), depth loss (`bullet.cpp`:1079)). This is a good model for Mall Zombies' `falloff` and `pierce` systems.
 
 **Mall Zombies implication:** compare guns at close, medium, and long range; body and head; first magazine and sustained fire; then include total carried damage, handling, and ammo cost. A gun can have lower listed DPS yet dominate a hallway because it keeps damage, pierces, or spends less time reloading.
 
 ### 2. Locational damage is allowed to be weapon- and enemy-specific
 
-Bullet weapons use their own hit-location multiplier table in Zombies, while projectiles and grenades use the global AI table ([location multiplier selection](../../references/bo1-zombies-decompiled-main/src/game_mp/g_combat_mp.cpp#L437)). BO1 also makes deliberate enemy exceptions: dogs cannot receive a location multiplier above 1, while an actor such as the Pentagon thief can ignore locational damage entirely ([actor damage](../../references/bo1-zombies-decompiled-main/src/game_mp/g_combat_mp.cpp#L737)).
+Bullet weapons use their own hit-location multiplier table in Zombies, while projectiles and grenades use the global AI table (location multiplier selection (`g_combat_mp.cpp`:437)). BO1 also makes deliberate enemy exceptions: dogs cannot receive a location multiplier above 1, while an actor such as the Pentagon thief can ignore locational damage entirely (actor damage (`g_combat_mp.cpp`:737)).
 
 **Mall Zombies implication:** headshot multiplier is a legitimate part of gun identity, not a universal constant. Price Gun at 1.5× and Rivet Rifle at 1.75× is directionally sound. Enemy-specific exceptions should be rare and strongly communicated. The Cart Pusher's crash vulnerability and hittable cart are more readable than silently suppressing headshot damage.
 
 ### 3. Penetration includes fairness rules, not only damage tuning
 
-The penetration path checks surfaces in both directions, uses the weaker applicable material depth, allows perks to modify penetration, and prevents a player's penetrated shot from continuing into a co-op teammate ([penetration handling](../../references/bo1-zombies-decompiled-main/src/game/bullet.cpp#L991)).
+The penetration path checks surfaces in both directions, uses the weaker applicable material depth, allows perks to modify penetration, and prevents a player's penetrated shot from continuing into a co-op teammate (penetration handling (`bullet.cpp`:991)).
 
 **Mall Zombies implication:** Build-A-Blaster penetration should define target count, per-target loss, valid surfaces, and interactions with special enemies. Do not let an upgrade's crowd multiplier emerge accidentally from a vague “pierces” flag. The present explicit arrays such as `[1, 0.5]` and `[1, 0.85, 0.7, 0.55]` are easier to balance.
 
 ### 4. Handling is part of combat difficulty
 
-BO1 has finite sprint time, a minimum charge required to re-enter sprint, strafe scaling while sprinting, and a 1.5× sprint speed default ([sprint dvars](../../references/bo1-zombies-decompiled-main/src/bgame/bg_misc.cpp#L1398)). Each gun can also have its own sprint-in/out, ADS transition, movement, raise, and drop timing ([weapon handling fields](../../references/bo1-zombies-decompiled-main/src/bgame/bg_weapons_load_obj.cpp#L504)).
+BO1 has finite sprint time, a minimum charge required to re-enter sprint, strafe scaling while sprinting, and a 1.5× sprint speed default (sprint dvars (`bg_misc.cpp`:1398)). Each gun can also have its own sprint-in/out, ADS transition, movement, raise, and drop timing (weapon handling fields (`bg_weapons_load_obj.cpp`:504)).
 
 Mall Zombies already has four seconds of sprint and weapon-specific ADS/recoil behavior. That is a useful balance surface. Rivet can feel meaningfully heavier than Price without losing its intended power advantage. However, movement penalties should remain secondary: players buy a 1,500-point rifle to feel stronger, not to receive the same combat output wrapped in inconvenience.
 
 ### 5. Melee uses a bounded volume and a committed damage path
 
-Player melee has separate range, width, and height controls ([melee dvars](../../references/bo1-zombies-decompiled-main/src/bgame/bg_misc.cpp#L1699)). The damage routine traces that volume, rejects friendly AI hits, and applies base damage plus a tiny random 0–4 roll ([melee damage](../../references/bo1-zombies-decompiled-main/src/game/g_weapon.cpp#L330), [random roll](../../references/bo1-zombies-decompiled-main/src/game/g_weapon.cpp#L448)). Charging AI damage is capped before tracing ([charge cap](../../references/bo1-zombies-decompiled-main/src/game/g_weapon.cpp#L363)).
+Player melee has separate range, width, and height controls (melee dvars (`bg_misc.cpp`:1699)). The damage routine traces that volume, rejects friendly AI hits, and applies base damage plus a tiny random 0–4 roll (melee damage (`g_weapon.cpp`:330), random roll (`g_weapon.cpp`:448)). Charging AI damage is capped before tracing (charge cap (`g_weapon.cpp`:363)).
 
 Mall Zombies' committed box-cutter lunge, limited steering, and obstruction check follow the valuable part of this design. I would not copy the hidden damage roll; deterministic thresholds make melee risk easier to learn. A cap on unavoidable charge damage is already reflected better by the Cart Pusher's one-hit-per-charge and crash recovery.
 
 ### 6. Crowd behavior is a system of waits, slowdowns, dodges, and pileups
 
-BO1 does not merely path every actor independently. Team movement can return travel, wait, or slow-down states, attempts dodges, records which actors form a pileup, and applies short retry windows ([team movement selection](../../references/bo1-zombies-decompiled-main/src/game/actor_team_move.cpp#L175), [pileup handling](../../references/bo1-zombies-decompiled-main/src/game/actor_team_move.cpp#L494)). The Zombies-specific movement path consumes those results and changes animation/movement accordingly ([path movement](../../references/bo1-zombies-decompiled-main/src/game/actor_zombie_exposed.cpp#L1016)).
+BO1 does not merely path every actor independently. Team movement can return travel, wait, or slow-down states, attempts dodges, records which actors form a pileup, and applies short retry windows (team movement selection (`actor_team_move.cpp`:175), pileup handling (`actor_team_move.cpp`:494)). The Zombies-specific movement path consumes those results and changes animation/movement accordingly (path movement (`actor_zombie_exposed.cpp`:1016)).
 
-The horde mod is a useful stress test. At much higher than retail population, three barrier attack spots become a throughput bottleneck; zombies can wait outside indefinitely even after boards are gone ([horde window notes](../../references/bo1-zombies-decompiled-main/mods/horde/README.md#L67)). Its unjam logic disables actor blocking only briefly, far from the player, and restores it near the player ([unjam notes](../../references/bo1-zombies-decompiled-main/mods/horde/README.md#L83)).
+The horde mod is a useful stress test. At much higher than retail population, three barrier attack spots become a throughput bottleneck; zombies can wait outside indefinitely even after boards are gone (horde window notes (`README.md`:67)). Its unjam logic disables actor blocking only briefly, far from the player, and restores it near the player (unjam notes (`README.md`:83)).
 
 **Mall Zombies implication:** its surround slots, lateral avoidance, and far-only stuck rescue are good architecture. Preserve collision near the player because readable body pressure is part of the game. Add diagnostics before adding more rescue behavior: count “approaching,” “close but waiting,” “unreachable,” and “rescued.” A rescue should preserve health and award no points, as it currently does.
 
 ### 7. The famous 24-enemy limit is contextual
 
-The horde mod identifies retail's live-zombie limit as 24 and the engine actor capacity as 32; it can raise both and then encounters crowd, barrier, entity, and frame-time problems ([horde capacity notes](../../references/bo1-zombies-decompiled-main/mods/horde/README.md#L22)). This is useful engineering evidence, but 24 is not a universal fun constant.
+The horde mod identifies retail's live-zombie limit as 24 and the engine actor capacity as 32; it can raise both and then encounters crowd, barrier, entity, and frame-time problems (horde capacity notes (`README.md`:22)). This is useful engineering evidence, but 24 is not a universal fun constant.
 
 Mall Zombies reaches 24 alive from round 15. Keep that cap for now. Its map scale, browser performance, collision model, and fast player movement matter more than nostalgia. Raise it only if telemetry shows that late rounds have long stretches below the cap despite fast kills and the frame budget remains healthy.
 
 ### 8. Doors alter the threat graph
 
-The retail-derived spawning behavior described by the horde mod uses the player's occupied zones and connected adjacent zones. Its optional “spawn all” mode instead uses every opened zone connected to the player; disconnected floors are excluded because enemies placed there cannot reach the player ([spawn-zone experiment](../../references/bo1-zombies-decompiled-main/mods/horde/maps/horde/_horde.gsc#L212)).
+The retail-derived spawning behavior described by the horde mod uses the player's occupied zones and connected adjacent zones. Its optional “spawn all” mode instead uses every opened zone connected to the player; disconnected floors are excluded because enemies placed there cannot reach the player (spawn-zone experiment (`_horde.gsc`:212)).
 
 Mall Zombies already requires an open zone and a finite navigation route, then favors a neighborhood near the cheapest routes ([spawn selection](../../src/zombies/zombieManager.js#L69)). This is fair and functional, but it means every door can add pressure as well as space.
 
@@ -70,13 +73,13 @@ Mall Zombies already requires an open zone and a finite navigation route, then f
 
 ### 9. Round completion provides closure; continuous carryover is a different mode
 
-Mall Zombies and retail-derived BO1 round flow both wait until the quota has spawned and all enemies are dead. The horde mod deliberately removes the all-dead condition, so the next round begins when the spawn quota is exhausted and survivors carry over ([horde round rule](../../references/bo1-zombies-decompiled-main/mods/horde/maps/horde/_horde.gsc#L6), [retail comparison](../../references/bo1-zombies-decompiled-main/mods/horde/maps/horde/_horde.gsc#L465)).
+Mall Zombies and retail-derived BO1 round flow both wait until the quota has spawned and all enemies are dead. The horde mod deliberately removes the all-dead condition, so the next round begins when the spawn quota is exhausted and survivors carry over (horde round rule (`_horde.gsc`:6), retail comparison (`_horde.gsc`:465)).
 
 The carryover experiment would increase pressure, but it sacrifices the clean relief-and-spend beat that makes the current six-second break useful. Keep conventional round closure for the main mode. Carryover would fit an explicitly labeled endless sale or overtime mode later.
 
 ### 10. Specials work best when they create a readable side objective
 
-The included Nightmare mod is explicitly not original BO1 balance ([Nightmare README](../../references/bo1-zombies-decompiled-main/mods/nightmare/README.md#L1)), so its extreme cadence cannot justify Mall Zombies tuning. Its adaptations still expose useful encounter patterns: George is calm until provoked and pays out when defeated; a thief steals a held weapon but can return it plus ammo; monkeys attack owned perk machines and switch behavior when hurt ([special behavior](../../references/bo1-zombies-decompiled-main/mods/nightmare/README.md#L19), [thief](../../references/bo1-zombies-decompiled-main/mods/nightmare/README.md#L48), [monkeys](../../references/bo1-zombies-decompiled-main/mods/nightmare/README.md#L54)).
+The included Nightmare mod is explicitly not original BO1 balance (Nightmare README (`README.md`:1)), so its extreme cadence cannot justify Mall Zombies tuning. Its adaptations still expose useful encounter patterns: George is calm until provoked and pays out when defeated; a thief steals a held weapon but can return it plus ammo; monkeys attack owned perk machines and switch behavior when hurt (special behavior (`README.md`:19), thief (`README.md`:48), monkeys (`README.md`:54)).
 
 The transferable idea is **temporary objective pressure with a clear recovery path**. The bad version is frequent denial that removes a paid build. This distinction matters once Wardrobe Perks arrive: a special may threaten, disable, or ask the player to defend a perk source, but permanently deleting a purchased perk would feel punitive in a solo game.
 

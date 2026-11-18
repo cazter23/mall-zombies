@@ -1,5 +1,5 @@
 // =============================================================================
-// KIOSK KEVIN HIMSELF (phase 8 of docs/kiosk-kevin-plan.md; colours and timings: config/kiosk.js vendor and hawk).
+// KIOSK KEVIN HIMSELF (phase 8 of docs/archive/kiosk-kevin-plan.md; colours and timings: config/kiosk.js vendor and hawk).
 // A low-poly guy in a teal polo, with a lanyard and a name badge, a headset mic and a quiff, standing in his cart (only the
 // top half shows over the counter). Presentation only: nothing here touches the game's state or its random numbers.
 //

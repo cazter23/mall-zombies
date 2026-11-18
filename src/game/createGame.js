@@ -694,7 +694,7 @@ export function createGame({
     ['zombies', () => zombies.clear()],
     ['mascotCostumes', () => mascotCostumes.reset()],
     ['wardrobe', () => wardrobe.reset()],
-    ['stats', () => resetPlayerStats(stats)], // perks / wardrobe / skill-tree changes don't carry over
+    ['stats', () => resetPlayerStats(stats)], // wardrobe and other stat changes don't carry over
     ['surfaces', () => surfaces.reset()], // no slow floor left over
     ['health', () => health.reset()], // (after stats: back to the base max health)
     ['secondChance', () => secondChance.reset()], // not held, and buyable again (its 'secondChance' event hides the HUD tag)

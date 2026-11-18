@@ -44,11 +44,11 @@ The 'claw' Flash Sale group (economy.flashSales.groups; no eligibility rule, as 
 isn't spent by one (tested with a sale running). `npm run sim:claw` (tools/clawSim.mjs + tools/clawOdds.js) reproduces the plan's odds from config and
 the game's own roll, adding a "timed" model (0.12 s press error against the real lane windows). The wall stays the cheaper way to every specific
 gun, but the first grab after the start shutter is worth 1.46x its price (84% Blue or better): a must-buy at 1,000. Recommended 1,250 (not applied:
-no rule strictly broken); the tables are in docs/claw-machine-plan.md.
+no rule strictly broken); the tables are in docs/archive/claw-machine-plan.md.
 
 ## 8 November 2026 - GRAB-A-GUN, phases 1 to 3: the claw machine, its six sites, Sunny and Refurbished prizes
 
-The mystery box you work (docs/claw-machine-plan.md). One cabinet on the Hallway's south wall at x 8. Hold F to pay 1,000 (g.pricing 'claw' 'grab'): three
+The mystery box you work (docs/archive/claw-machine-plan.md). One cabinet on the Hallway's south wall at x 8. Hold F to pay 1,000 (g.pricing 'claw' 'grab'): three
 coloured capsules fall into the pit and the screen names them. The claw sweeps the lanes; PRESS F once to drop it, and the capsule under it is your gun.
 It lifts to the chute, where the gun waits 15 s (hold F to take it). It drops by itself after 6 s, so walking away never hangs it.
 Prizes: the seven wall guns by weight, never the Staple Gun, never a gun you carry or have at Build-A-Blaster (Refurbished prizes come in phase 3).
@@ -223,7 +223,7 @@ tag (now dark-rimmed eyes), and drips that read as ears. Per-costume posters wer
 
 ## Bosses phase 6: spectacle and verification
 
-Finished employee costumes and filming/meeting poses, aligned enlarged head hitboxes, added a distinct sting and corporate defeat line per boss, and use a colored confetti death burst with no boss gore. Shift+J selects a boss, J summons it; explicit debug ids remain supported. Added boss health/reward/theoretical Nail Gun time rows to npm run balance. Health and damage stay at the requested starting values pending player feedback. Headless browser inspection prompted a raised ring-light pose and a rotated whiteboard beside Dennis so it cannot hide his head from the front. Vouchers now clear on death, and order-form purchases consume them through g.events. Shared-file and validation details: docs/archive/bosses-2-report.md.
+Finished employee costumes and filming/meeting poses, aligned enlarged head hitboxes, added a distinct sting and corporate defeat line per boss, and use a colored confetti death burst with no boss gore. Shift+J selects a boss, J summons it; explicit debug ids remain supported. Added boss health/reward/theoretical Nail Gun time rows to npm run balance. Health and damage stay at the requested starting values pending player feedback. Headless browser inspection prompted a raised ring-light pose and a rotated whiteboard beside Dennis so it cannot hide his head from the front. Vouchers now clear on death, and order-form purchases consume them through g.events.
 
 ## Bosses phase 5: approved encores
 

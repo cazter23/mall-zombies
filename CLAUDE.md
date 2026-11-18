@@ -24,31 +24,26 @@ npm run build         # production build into dist/; run after every change to c
 npm run preview       # serve the built dist/
 npm run build:single  # dist-single/sunset-galleria.html: the WHOLE game in one file (no server, no Node, no internet)
 npm run play          # JUST PLAYING: rebuilds that file only if the code changed, opens it in Firefox (play.cmd = the same by double-click)
-npm run audition      # the gun sound audition (tools/audition.html) as one file in Firefox, no dev server: listen, compare, Measure
-npm run balance       # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
-npm run melee         # box cutter report (tools/meleeReport.mjs): swings to kill by round, plain vs the Customer Service tiers
-npm run kiosk         # Kiosk Kevin report (tools/kioskReport.mjs): equipment damage by round and type, Bubble Wrap hits to death, the Sentry vs the Price Gun, prices in rounds of income
-npm run perf          # performance report (tools/perfReport.mjs): tick time at a late round, four spots; --profile = which functions; --root <folder> = another checkout
-npm run sim:economy   # economy report (tools/economySim.mjs, ~90 min from an empty cache; --quick for a short look): a headless bot's income by round, what it can afford when, proposals before/after
-npm run sim:claw      # GRAB-A-GUN odds tables (tools/clawSim.mjs)
-npm run sim:challenges  # weapon-skin challenge report (tools/challengeReport.mjs): how many runs each challenge takes
-npm run balance:bab   # Build-A-Blaster report (tools/babReport.mjs): plain gun vs warranty tiers vs builds
-npm run sim:closing   # Closing Time quest bot (tools/closingTimeSim.mjs). COSTLY and it measures the bot, not players: ask first
+npm run audition      # the gun sound audition (tools/audition.html) as one file in Firefox: listen, compare, Measure
 ```
+Reports (tools/, headless): `npm run balance` (guns: dps by range, pulls to kill by round), `melee` (box cutter tiers), `kiosk` (Kiosk
+Kevin's equipment), `balance:bab` (Build-A-Blaster builds), `perf` (tick time; `--profile`, `--root <folder>`), `sim:claw` (GRAB-A-GUN odds),
+`sim:challenges` (weapon-skin challenges), `sim:economy` (a bot's income by round; ~90 min cold, `--quick` for a look), and `sim:closing`
+(Closing Time's quest bot: COSTLY and it measures the bot, not players: ask first).
 There is no linter. Docs-only changes need no tests. What each test file covers: docs/tests.md (relationships and rules, not exact values).
 tests/docs.test.js fails if a new src/ file or test file isn't described in the docs.
 
 ## Rules for working on this project
 - Game logic runs on a fixed 60Hz timestep; rendering is decoupled (render gets `alpha` to interpolate).
 - Every tunable number lives in `src/config/` (`feel.js`, `economy.js`, `weapons.js`, `zombies.js`, `controls.js`,
-  `audio.js`, `debug.js`), never hardcoded in logic.
+  `audio.js`, `debug.js`, one file per area...), never hardcoded in logic.
 - Guns: numbers only in `config/weapons.js`; they are COMBINED only in `weapons/gunStats.js` (hitDamage per hit,
   resolveGun for upgrades). Upgrades never edit config entries. After any weapon change run `npm run balance` and
   `npm test` (tests/balance.test.js checks each gun still does its job).
-- All player stats live in one stats object (`src/player/stats.js`) so perks, wardrobe and a
-  future skill tree modify it in one place. Systems read stats, not config, at runtime.
-- Death is handled in one function (`onPlayerDeath` in `game/createGame.js`) so a downed/revive system can be added
-  later. `player/health.js` calls it exactly once when health reaches 0.
+- All player stats live in one stats object (`src/player/stats.js`) so the wardrobe, power-ups and anything else that
+  changes the player modify it in one place. Systems read stats, not config, at runtime.
+- Death is handled in one function (`onPlayerDeath` in `game/createGame.js`); Second Chance (game/secondChance.js, the
+  self-revive) is redeemed there. `player/health.js` calls it exactly once when health reaches 0.
 - Gameplay systems are built and ticked in `game/createGame.js` (no DOM/WebGL there, so it runs headless in tests).
   `main.js` is only the browser side. A new gameplay system is created and wired in createGame.js, never in main.js.
 - Systems ANNOUNCE what happened on the event bus (`g.events`, game/events.js lists every event); features LISTEN.
@@ -75,45 +70,29 @@ tests/docs.test.js fails if a new src/ file or test file isn't described in the 
 | When you... | read |
 |---|---|
 | change or add a module | its entry in docs/folder-structure.md (search for the file name) |
-| work in an area or add a door/spawn/buy spot | its entry in docs/map.md |
+| work in an area or add a door/spawn/buy spot | its entry in docs/map.md (adding an area: its checklist at the top) |
 | want the background of a past decision, a measured number, or how an area was built | docs/history.md (newest first; older: docs/archive/) |
-| plan the next big system | the open plans: docs/closing-time-plan.md (all phases built), docs/kiosk-kevin-plan.md (all built: only its "Later" list), docs/arena-modes-plan.md (Extra Modes: arena survival, built); finished plans (claw machine, wardrobe, weapon skins, hazards, bosses...) are in docs/archive/ |
+| want to know what is still open, or plan something new | docs/open-ideas.md (unbuilt ideas and balance proposals); finished plans are in docs/archive/ (README lists them) |
 | want to know how COD zombies does something | docs/research/ (BO1, BO3, BO4 and Cold War script analyses, and a balance comparison) |
 | touch behaviour and want to know which test guards it | docs/tests.md |
-| add or restyle a sign, poster, neon or label (fonts, roles) | docs/typefaces.md (the type system) and docs/typefaces-ledger.md (every sign) |
-| change a gun | docs/weapon-balance-pass.md and `npm run balance` |
+| add or restyle a sign, poster, neon or label (fonts, roles) | docs/typefaces.md (the type system); docs/typefaces-ledger.md (the signs as of 13 November) |
+| change a gun | `npm run balance`; the reasons behind today's numbers: docs/archive/balance-review.md and docs/history.md |
 | change a gun's or a hit's sound | docs/gun-sounds.md (config/gunSounds.js; listen and measure: `npm run dev`, /tools/audition.html) |
 | change a zombie's sound, or where sounds come from (3D, walls, the crowd) | docs/spatial-audio.md (config/spatialAudio.js; the audition page's 3D card) |
 | change a price, a payout or how strong an upgrade is | docs/economy-report.md and `npm run sim:economy` |
 | write or change any line of game text | docs/voice.md |
-| touch a menu, a prompt or anything a controller does (one menu model: core/menuNav.js) | docs/controller-audit.md |
+| touch a menu, a prompt or anything a controller does (one menu model: core/menuNav.js) | docs/controller-audit.md; HUD text sizes: docs/ui-readability.md |
 
-## Folder map (short; every module is described in docs/folder-structure.md)
+## Folder map (every module: docs/folder-structure.md)
 ```
-index.html, package.json, vite.config.js (dev server only), play.cmd
-src/main.js          BROWSER SIDE ONLY: renderer, scene, camera, input + gamepad, HUD, sound, viewmodel, menus, pointer lock, loop, window.__mall test hook
-src/game/            ALL gameplay wiring, DOM-free so it runs headless in tests: createGame.js (builds + ticks every system), rounds, wallet, pricing,
-                     events (the bus), interactions (buying), features/ (map features by kind: wall buys, ammo cache, upgrade desk, attachment
-                     counters, Build-A-Blaster's ritual and builds, horror director), powerUps, careerStats, settings, debugCommands, ambience, shutterSounds
-src/config/          EVERY tunable number: feel, economy (prices), weapons, zombies, controls, audio, settings, debug, look (art direction),
-                     environment, plus one file per area (promenade, cinema, cinemaStairs, departmentStore, departmentStoreDetails, atrium...)
-src/core/            fixed-step loop, input, gamepad, haptics, springs, keyframes, idle saver (title/pause screens draw slowly then stop: config/idle.js)
-src/player/          controller (movement/stances/camera), vault, stats (THE stats object), health, body (first-person legs)
-src/weapons/         weapon (ammo/fire state), aim, aimAssist, hitscan, melee, gunStats (THE damage maths), upgrades, playerGun (2-slot loadout), viewmodel,
-                     models/ (one file per gun + upgradeParts), muzzleFlash
-src/zombies/         zombie, zombieManager (spawning, crowds, failsafe), navigation (floors + ramp links), zombieModel, shopperAppearance, cartModel,
-                     mascotModel/mascotHeads (the Mascot costumes), bosses/ (one behaviour + model per boss; game/bossDirector.js schedules them)
-src/maps/            index.js (map registry + THE MAP INTERFACE), mall/ (mall.js = the layout + wiring; one module per area, its Details and Look),
-                     testRange/ (debug only)
-src/world/           shared building blocks: mapKit (boxes/walls/doors/slabs/corridors + dispose), corridor, door, shutter, collision (+ramps), textures,
-                     neon, decor/scatter (clutter), staticBatch, wallBuy
-src/fx/              post-processing, zone grading, light pool, room culling, effects, impact marks, contact shadows, power-up view, benchmark
-src/audio/           synthesised sound, music worker
-src/ui/              retail HUD pieces: hud, settings/controls menus, debug panel, announcements, incentive HUD, titleCamera
-tests/               node:test files (one per system/area) + helpers/headlessGame.js (the real game running headless)
-tools/               dev scripts: the test runner (runTests.mjs, testQuick.mjs), single-file build + play, the reports above, music export
-docs/                history.md, folder-structure.md, map.md, tests.md, weapon-balance-pass.md, economy-report.md, ui-readability.md (HUD text
-                     sizes and lanes), the open plans; archive/ (finished plans, old history); research/ (COD zombies script analyses)
+src/main.js     BROWSER SIDE ONLY: renderer, scene, camera, input + gamepad, HUD, sound, viewmodel, menus, pointer lock, loop, window.__mall
+src/game/       ALL gameplay wiring, DOM-free (runs headless): createGame.js builds + ticks every system; features/ = map features by kind
+src/config/     EVERY tunable number (feel, economy, weapons, zombies, controls, audio, settings, debug, look, one file per area...)
+src/core/  src/player/  src/weapons/  src/zombies/  src/maps/ (index.js = THE MAP INTERFACE; mall/; testRange/ = debug only)
+src/world/ (shared building blocks)  src/fx/  src/audio/  src/ui/
+tests/          node:test files + helpers/headlessGame.js (the real game running headless)
+tools/          the test runner, the single-file build + play, the reports above
+docs/           history, folder-structure, map, tests, open-ideas, topic guides; archive/ (finished plans, old history); research/
 ```
 
 ## How the pieces connect (the full walkthrough: docs/folder-structure.md, "How the pieces connect")
@@ -131,28 +110,17 @@ docs/                history.md, folder-structure.md, map.md, tests.md, weapon-b
 - Coordinates: metres, +Y up, yaw 0 faces -Z. Test hook: `window.__mall.step(n)` with `game.forceRun`; tests use
   tests/helpers/headlessGame.js (the real game, no browser).
 
-## Map (short; coordinates, spawns and details per area in docs/map.md)
-Metres, +Y up, yaw 0 faces -Z. The start room opens into the MAIN HALLWAY (the hub); each area is bought once through any accessible entrance (prices in
-`config/economy.js` economy.doors, keyed by destination area, read through `g.pricing`). Connections open free when both
-adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500; 15 physical barriers remain.
-- **Start room** x -5..5, z 6..16 (open at start). Start shutter 500 -> hallway. Side door 1250 (west wall) -> HOFFMAN'S.
-- **Main hallway** x -20..20, z -2..6, 6 m. Doors: Food Court 1000 (south), Mega Mart 750 (east end), Service Corridor 1000 (west), Grand Atrium 1250
-  (north, x 13..18), HOFFMAN'S 1250 (north, x -19.5..-15.5). Promenade unlock 1250 also repairs the escalator when Hallway is owned. Customer Service booth (gun tiers) on the north wall.
-- **Food Court** x -20..20, z -14.3..-2.3: four stores (attachments), stalls, RESTOCK-O-MATIC (400 refill). **Mega Mart** x 20..34, z -24..6.
-  **Service Corridor** 3 m wide, west of the hallway then south to z -14.
-- **Connections:** Food Court <-> Mega Mart, Service Corridor <-> Food Court, Atrium <-> Mega Mart, Atrium <-> Promenade: free once both endpoints are owned; otherwise buy the unowned area at its destination price.
-- **Grand Atrium** x 8..32, z 6.6..30.6, two storeys (upper ring y 6.3), second escalator.
-- **Level 2 / Sunset Promenade** x -20..20, z -4.5..6 (+ shoe annex), floor y 6.3, zone 'upstairs'.
-- **HOFFMAN'S department store** x -20..-5.3, z 6.3..26, 5 m (counters vaultable; everything else >= 2.1 m).
-- **Sunset Cinema** upstairs x -42..-20.3: 1250 area unlock off the Promenade's west wall or Service Corridor's north end; the other connection opens free when its neighbouring area is owned.
-- **Build-A-Blaster:** storefront + back hall off the Promenade (numbers: config/workshop.js, config/promenade.js workshop; docs/map.md). Hold F at the bench: an order form (pre-filled; F orders), fight in the room to fill the tank and finish it sooner, and the gun comes back to you named: game/features/workshop*.js. Zombies with shopping bags sometimes drop one of Kevin's items (game/bagDrops.js).
-- **Wall buys:** Price Gun (start room), Nail Gun (hallway), Foam Dart Blaster (Mega Mart), Confetti Cannon (Service Corridor), Rivet Rifle (Atrium),
-  Heavy Coil Nailer (Cinema projection passage, 2500), Barcode Scanner (HOFFMAN'S). Door count: 15.
-- **Customer Parking** x 34.3..62.3, z -24..6, y 0: 1250 through Mega Mart's former east emergency exit (z 1..4).
-  Three tall abandoned vans, four outdoor spawns, fenced perimeter, sunset sky; config/parkingLot.js and maps/mall/parkingLot.js.
-- **RESTOCK-O-MATICs:** Food Court north wall, Grand Atrium ground-floor northeast corner, and Cinema lobby north wall.
-  Each requires its area unlocked and refills the held gun for 400 points.
-- **Player spawns** at (0, 0, 12). Zombie spawn markers are tagged by zone (carrying floor height in `position.y`) and only used while their zone is open.
+## Map (short; coordinates, spawns, buy spots and details per area in docs/map.md)
+The start room opens into the MAIN HALLWAY (the hub); each area is bought once through any accessible entrance (prices: economy.doors,
+keyed by destination area, read through `g.pricing`). Connections open free when both adjoining areas are owned; no cascading unlocks.
+Nine area purchases total 9500; 15 physical barriers. Player spawn (0, 0, 12); zombie spawn markers are tagged by zone and only used while it is open.
+- **Start room** x -5..5, z 6..16 (owned at start): shutter 500 -> hallway, side door -> HOFFMAN'S.
+- **Main hallway** x -20..20, z -2..6: doors to the Food Court, Mega Mart, Service Corridor, Grand Atrium and HOFFMAN'S; Customer Service (warranty tiers).
+- **Food Court** x -20..20, z -14.3..-2.3 (four attachment stores). **Mega Mart** x 20..34, z -24..6. **Service Corridor** 3 m wide, west then south.
+- **Grand Atrium** x 8..32, z 6.6..30.6, two storeys. **Sunset Promenade** (level 2, y 6.3) x -20..20, z -4.5..6, with Build-A-Blaster off it.
+- **HOFFMAN'S** x -20..-5.3, z 6.3..26. **Sunset Cinema** upstairs x -42..-20.3. **Customer Parking** x 34.3..62.3, z -24..6 (outdoors, off Mega Mart).
+- Wall buys: Price Gun (start room), Nail Gun (hallway), Foam Dart Blaster (Mega Mart), Confetti Cannon (Service Corridor), Rivet Rifle (Atrium),
+  Heavy Coil Nailer (Cinema), Barcode Scanner (HOFFMAN'S). RESTOCK-O-MATICs (400, refill the held gun): Food Court, Atrium, Cinema.
 
 ## Gotchas that have cost time (read before changing the map or its tests)
 - **Decoration** is static and has no collision (`collide:false`); the static batcher merges it. Hang things >= 2 cm proud of a wall, never on its plane:
@@ -163,10 +131,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
   The one way up or down besides stairs and escalators: balcony rails (`ledge`) can be climbed over to drop to the floor below (fall damage applies).
 - **Tests: never seed `Math.random` before building the map.** Three.js makes object ids with it, so the scenario then depends on the map's mesh
   count and flips whenever anyone adds a mesh. Build first, seed after.
-- **Adding an area or door** touches the same lists everywhere: LAYOUT + zones + doors + spawns + lamps + `cullAreas`/`cullPortals` + `gradeZones` + a horror
-  area + a benchmark shot + ambience emitters (all in mall.js), a shutter finish (config/shutters.js), the price (economy.doors), the door counts and the
-  "120 orders" exclusions in tests/mall.test.js, and a coplanar region. Use docs/archive/history-2026-10.md (HOFFMAN'S entry) as the worked example.
-  Arena survival (config/arenas.js) seals an arena's zones: a new door into an arena area stays shut there; a fixture only for an arena goes in its entry.
+- **Adding an area or door** touches a dozen lists (mall.js, shutters, prices, mall.test.js counts, a coplanar region): follow the checklist at the top of docs/map.md.
 - **Speed-ups must give the same result** (config/performance.js, docs/history.md 15 November 2026). Collision reads a grid of nearby boxes
   (world/colliderGrid.js): add / remove boxes and call `markCollidersChanged`, never move a box in place. A still prop a feature adds to the
   scene gets `userData.roomProp = true` so room culling can skip it. tests/drawBudget.test.js fails when a benchmark shot draws too much.
@@ -176,49 +141,34 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
   Say which shared files you changed (mall.js, economy.js, shutters.js, CLAUDE.md, tests).
   docs/history.md, tests.md and folder-structure.md merge with git's union driver (.gitattributes): a merge keeps both sides' lines and never conflicts there; after a merge, glance at the file for a doubled line.
 - **Windows shell:** complicated quoting in Bash heredocs fails; write scripts with the file tools. Line endings are mixed (CRLF and LF): an edit script must keep each file's own.
-- **Canvas fonts / typefaces:** every sign, poster and label in the 3D world asks for a ROLE (config/typefaces.js: roles, families, sign kinds) through `world/typeKit.js` (`fontFor`, `drawType`); never write a raw font string (tests/typefaces.test.js fails on one). Fonts are bundled locally (src/fonts/, no network, they work in the single-file build): a new family = its .woff2 in src/fonts/files + an entry in `families` + `node tools/buildFontCss.mjs`. `src/boot.js` waits for them before main.js. HUD/menu type (style.css) is separate. The sign table: docs/typefaces.md.
+- **Canvas fonts:** every sign in the 3D world asks for a ROLE (config/typefaces.js) through `world/typeKit.js` (`fontFor`, `drawType`); never a raw
+  font string (tests/typefaces.test.js fails on one). Fonts are bundled locally (src/fonts/); adding a family: docs/typefaces.md. HUD/menu type (style.css) is separate.
 - **Browser checks:** build first (`npm run build`) and use `npm run preview`, opening the address with `?debug` (DEBUG MODE: without it there
   is no `window.__mall`, no debug keys and no test range); a hidden pane shows stale frames (take two), and its frame times mean nothing
   (draw calls and triangles still count). `window.__mall` has `step(n)`, `g`, `game.forceRun`; `g.debug.run('doors'|'god')`.
 - **Keep this file small.** It loads in every session. New history goes in docs/history.md, new per-module notes in docs/folder-structure.md, new
-  coordinates in docs/map.md, new test descriptions in docs/tests.md; change this file only for rules, commands and the short maps above.
+  coordinates in docs/map.md, new test descriptions in docs/tests.md, new ideas in docs/open-ideas.md; change this file only for rules, commands and the short maps above.
 
 ## Debug mode and the test range
 Off for players. On for `npm run dev`, an address ending in `?debug`, or Settings > Debug (config/debug.js `mode`). It turns on the debug
-keys, window.__mall and the test range, the Staff Training Center (T teleports there; its shooting gallery reads out damage, falloff and hit rate; its armory bench
-hands out any gun, warranty, attachment, build, wardrobe item or equipment; its zombie pen spawns any zombie, costume or boss; its movement course shows today's vault, rail, ramp and fall
-rules with a readout). Layout: docs/folder-structure.md.
+keys (` lists them), window.__mall and the test range, the Staff Training Center (T goes there and back): a shooting gallery, an armory bench
+(any gun, upgrade or item), a zombie pen (any zombie, costume or boss) and a movement course with a readout. A run that uses a debug command
+is marked assisted and records nothing.
 
-## Build order (status, November 2026)
-1-4. Walkable mall, staple gun, Shopper zombies + box cutter, waves/points/doors/wall buys (done)
-5. The roster: Mall Walker, Cart Pusher, Mannequin, Mascot (four costumes + gold) (done); bosses: Murray, Fairweather, Kettle, Skylar, with encores (done)
-6. Build-A-Blaster and Flash Sales (done); Wardrobe and claw machine (done); Kiosk Kevin vendor (all eight phases done); hazards (done: docs/archive/hazards-plan.md)
-7. Second floor, escalators, stairs, multi-floor navigation (done); elevators (dropped: escalators and stairs do the job)
-8. Audio and UI polish (ongoing): Galleria FM radio, the minimap, weapon skins, the Survival Guide, Lost and Found (done)
-9. Meta progression and skill tree (not started); the run goal / ending, Closing Time (all twelve phases done: docs/closing-time-plan.md)
-
-## Design reference (decisions made so far)
-- **Zombie roster, with intro rounds:** Shopper (round 1), Shoplifter (4: a hit steals points, then it flees; kill it to get them back; it replaced the Mall Walker, now only a boss's backup),
-  Cart Pusher (6, telegraphed charge), Mannequin (8, frozen while looked at; implemented), Mascot (10, tanky, 5x HP; implemented).
-  The Mascot is ONE slot in several costumes (config/zombies.js mascotVariants, each changing one beat): Sir Waffles (10, baseline),
-  Captain Coupon (13, puts his head back on), Poppy Corn (16, the pop is a blast), Scoops (19, slowing melt trail), plus the
-  rare gold Employee of the Month (15+, guaranteed power-up). A new costume = a config entry + a head kind in zombies/mascotHeads.js.
-- **Bosses** (config/bosses.js; one extra zombie on a normal round, a health bar, a voucher reward): Mopwater Murray the Janitor (5 or 7),
-  Officer Doug Kettle the Security Guard (9 or 11), Dennis Fairweather the Mall Manager (12-14), Skylar Sparkle the Influencer (15 or 17),
-  and encores from round 20. Later ideas (Food Court Karen, Santa): docs/archive/boss-zombies-plan.md.
-- **Weapons by store:** start with a staple gun pistol; wall buys like baseball bat, nail gun,
-  foam dart blaster, confetti cannon, leaf blower, water cannon, taser rifle, condiment cannon,
-  balloon launcher, tennis ball launcher.
-- **Mystery box equivalent:** a claw machine (sometimes a plush toy appears and it relocates).
-- **Perks = wardrobe system:** 4 slots (head, torso, feet, accessory), one item per slot, each with a
-  small upside and downside; buy once, swap free at fitting rooms.
-- **Pack-a-Punch equivalent: Build-A-Blaster (built: docs/archive/build-a-blaster-plan.md).** One build per weapon (fryer oil = burn, smoothie freeze = slow,
-  neon sign = electric chain, glitter = confuse zombies).
-- **Vendor: Kiosk Kevin** sells lethals, tacticals, armor plates and a turret, with rotating stock each round.
-- **Environmental hazards** (pay to trigger, with cooldowns; built: docs/archive/hazards-plan.md): electrified fountain (Atrium), fryer blast (Food Court),
-  fire sprinklers (Main Hallway), PA system lure (Service Corridor). Escalator reversal and toppling shelves were dropped (the plan says why).
-- **Flash Sales:** random, announced over the mall PA (25-50% off one category).
-- **Later:** meta progression and a skill tree (keep boosts small).
-- **Economy highlights:** start with 500 points, start shutter 500, zombie HP 150 at round 1 then
-  +75/round through round 9 then x1.075/round, zombie count `round(6 + 2.5*(round-1))`.
-  Full values live in `src/config/economy.js`.
+## The game as built (November 2026; what's still open: docs/open-ideas.md)
+Everything below is built. The skill tree and meta progression were decided against (17 November 2026); so were elevators.
+- **Zombies** (intro round): Shopper (1), Shoplifter (4: a hit steals points, kill it to get them back), Cart Pusher (6, telegraphed charge),
+  Mannequin (8, frozen while looked at), Mascot (10, 5x HP). The Mascot is ONE slot in five costumes (config/zombies.js mascotVariants, each
+  changing one beat: Sir Waffles, Captain Coupon, Poppy Corn, Scoops, Twisty the Pretzel), plus the rare gold Employee of the Month.
+  A new costume = a config entry + a head kind in zombies/mascotHeads.js.
+- **Bosses** (config/bosses.js; one extra zombie on a normal round, a health bar, a voucher): Mopwater Murray, Officer Doug Kettle,
+  Dennis Fairweather, Skylar Sparkle, encores from round 20; the Last Customer (Lorraine Pruitt) is Closing Time's final boss.
+- **Guns:** the Staple Gun you start with, seven wall buys (above), and the GRAB-A-GUN claw machine's prizes (wonder weapons). Upgrades:
+  warranty tiers at Customer Service, attachments from the Food Court stores, and Build-A-Blaster (the Pack-a-Punch: a build is a
+  stuffing + a heart + a quality, picked on an order form).
+- **Perks = the Wardrobe:** 4 slots, one item each, a small upside and a downside; buy once, swap free at fitting rooms. Keep boosts small.
+- **Kiosk Kevin** (lethals, tacticals, armor, a turret, rotating stock), pay-to-trigger **hazards**, **Flash Sales** (25-50% off one category,
+  over the PA), power-ups, Second Chance, weapon skins and challenges, the Survival Guide, Lost and Found, Galleria FM.
+- **Closing Time** is the run's goal and ending (Directed or Classic). **Extra Modes:** arena survival in one part of the mall (config/arenas.js).
+- **Economy:** start with 500 points; zombie HP 150 at round 1, +75/round through round 9, then x1.075/round; zombie count
+  `round(6 + 2.5*(round-1))`. Full values: `src/config/economy.js`.

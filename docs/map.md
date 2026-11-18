@@ -1,6 +1,6 @@
 # Sunset Galleria: the map, area by area (coordinates, doors, spawns, buy spots)
 
-> Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Read the entry for the area you are working in. CLAUDE.md has a one-screen summary.
+> The full map reference: read the entry for the area you are working in. CLAUDE.md has a one-screen summary.
 
 The start room opens into a MAIN HALLWAY (the hub). Buy each destination once, through any accessible entrance.
 Connections open automatically and free when both adjoining areas are unlocked; a shutter never grants its neighbours.
@@ -8,6 +8,13 @@ Prices (category `door`, keyed by area): hallway 500, Mega Mart 750, Food Court 
 HOFFMAN'S 1250, Grand Atrium 1250, Promenade/upstairs 1250, Cinema 1250, Customer Parking 1250. Nine purchases fully connect all 15
 barriers for 9500 points. Door Flash Sales apply to the destination price; prompts show the destination name.
 Start Room is owned initially; Play again restores that state. Debug O opens all areas, or resets all when fully open.
+
+**Adding an area or door** touches the same lists everywhere: in mall.js, LAYOUT + zones + doors + spawns + lamps +
+`cullAreas`/`cullPortals` + `gradeZones` + a horror area + a benchmark shot + ambience emitters; a shutter finish (config/shutters.js);
+the price (economy.doors); the door counts and the "120 orders" exclusions in tests/mall.test.js; and a coplanar region
+(tests/coplanar.test.js). The worked example: docs/archive/history-2026-10.md, the HOFFMAN'S entry. Arena survival
+(config/arenas.js) seals an arena's zones: a new door into an arena area stays shut there; a fixture only for an arena goes in its entry.
+
 - Start room: x -5..5, z 6..16, 4m ceiling, checkout counter, shelf, crates, boarded vents (and, decoration only: a slatwall of leftover stock on the
   east wall at z 13..15.4, SALE bunting across the ceiling at z 9 and 12.8, a FINAL WEEK sign hung over z 11). Its 4m doorway at z=6
   is blocked by a security shutter door (500) that opens the hallway. Hold **F** (controller: hold **X**) near a
@@ -288,7 +295,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
 - NO REFUNDS signs, the Return quest's first step (feature kind `refundSign`, shoot to knock flat): Start Room (-4.5, 0, 13.25), Main
   Hallway (19.25, 0, -1.5), Food Court (8.75, 0, -13.8), Mega Mart (20.75, 0, -23.5).
 
-## Arena survival (Extra Modes; config/arenas.js, maps/mall/arenas.js, docs/arena-modes-plan.md)
+## Arena survival (Extra Modes; config/arenas.js, maps/mall/arenas.js, docs/archive/arena-modes-plan.md)
 
 Arena-only things live in a hidden group per arena (no collider in the world, no spawn, no feature) until that arena is on; then
 only its zones are open and the area system is sealed (every door stays shut, no purchase prompts).

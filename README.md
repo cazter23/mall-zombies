@@ -26,13 +26,18 @@ Inspired by the round-based zombies modes of the *Call of Duty* series, with its
   Confetti Cannon, Rivet Rifle, Heavy Coil Nailer and Barcode Scanner, each with COD-style damage falloff by range.
 - **GRAB-A-GUN**, a claw machine mystery box with wonder weapons (a leaf blower, a tennis ball launcher, a bottle
   rocket bazooka...), and **Build-A-Blaster**, where your gun comes back upgraded and named.
+- **Upgrades:** warranty tiers at Customer Service, attachments from the Food Court stores, and box cutter tiers.
 - **A roster of zombies:** Shoppers, Shoplifters who steal your points, Cart Pushers who charge, Mannequins that only
-  move when you're not looking, and Mascots in costume. Plus **bosses** (the janitor, the security guard, the mall
-  manager, the influencer) with health bars and rewards.
+  move when you're not looking, and Mascots in five costumes (plus a rare gold one). Plus **bosses** (the janitor, the
+  security guard, the mall manager, the influencer) with health bars and rewards.
 - **Kiosk Kevin**, a vendor with rotating stock: throwables, armor and a turret.
 - **Employee incentives** (power-ups), **Flash Sales** announced over the mall PA, pay-to-trigger **hazards**
-  (an electrified fountain, a fryer blast, sprinklers), a **wardrobe** of perks, weapon skins and challenges.
-- **Closing Time**, the run's ending, and **Galleria FM**, the in-mall radio.
+  (an electrified fountain, a fryer blast, sprinklers, a PA lure), a **wardrobe** of perks, weapon skins and challenges.
+- **Closing Time**, the run's ending: a checklist of duties, a final boss (the Last Customer) and a way out. Directed, or
+  Classic with no pointers.
+- **Extra Modes:** arena survival locked in one part of the mall (Everything Must Go, Last Showing, Lot Full), with a
+  WEAR-O-MATIC that sells every wardrobe perk.
+- **The Staff Survival Guide** (what you've found and learned), **Lost and Found** pickups, and **Galleria FM**, the in-mall radio.
 - **Save & Quit**, a minimap and mall directory, full **controller support**, and graphics presets down to "Potato".
 
 ## Play it
@@ -52,7 +57,7 @@ and only rebuilds when the code has changed.
 
 To work on the game with hot reload instead, run `npm run dev` and open the address it prints.
 
-**Debug mode** (cheat keys, and a test range with a shooting gallery that reads out damage and falloff, an armory bench with every
+**Debug mode** (cheat keys, and a test range, the Staff Training Center, with a shooting gallery that reads out damage and falloff, an armory bench with every
 gun, upgrade and item for free, a zombie pen to spawn any zombie or boss, and a movement course with a readout) is off when you play. It is on
 with `npm run dev`, when the address ends in `?debug`, or after switching on Settings > Debug > Debug mode and reopening the game.
 The backquote key lists the debug keys and T goes to the test range. A run that uses a debug key is not recorded.
@@ -71,6 +76,7 @@ The backquote key lists the debug keys and T goes to the test range. A run that 
 | Switch weapon | Mouse wheel, 1 / 2 | Y |
 | Melee (box cutter) | V | R3 |
 | Lethal / tactical | G / middle mouse | RB / D-pad right |
+| Inspect weapon (hold between rounds: clock in) | I | D-pad down |
 | Minimap (hold: mall directory) | Tab | Back |
 | Pause | Esc | Start |
 
@@ -128,4 +134,4 @@ is the rulebook those agents follow, and the large test suite is what keeps thei
 
 ## License
 
-[MIT](LICENSE). The bundled fonts in `src/fonts/` keep their own open licenses (SIL Open Font License or Apache 2.0; each is listed in [docs/typefaces-ledger.md](docs/typefaces-ledger.md)).
+[MIT](LICENSE). The bundled fonts in `src/fonts/` keep their own open licenses (SIL Open Font License or Apache 2.0; each family's is listed in [`src/config/typefaces.js`](src/config/typefaces.js)).

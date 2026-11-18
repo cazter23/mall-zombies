@@ -29,7 +29,7 @@ export const wardrobeItems = {
   },
   glasses: {
     slot: 'head', name: '3D Glasses', shortName: '3D Glasses',
-    factors: { headshotDamageMultiplier: 1.5, adsMoveSpeed: 0.85 }, // (headshots x1.25: +8% damage at human headshot rates; docs/balance-review.md, P6)
+    factors: { headshotDamageMultiplier: 1.5, adsMoveSpeed: 0.85 }, // (headshots x1.25: +8% damage at human headshot rates; docs/archive/balance-review.md, P6)
     ticket: 'The floor is closer than it appears.',
     color: 0x29c4f0, icon: 'glasses3d', pulse: 'headshot',
     lines: [{ effect: 'headshotDamageMultiplier', text: '{Size} more headshot damage' }, { effect: 'adsMoveSpeed', text: 'Moves {size} slower while aiming' }],

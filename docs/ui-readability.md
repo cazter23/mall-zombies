@@ -15,7 +15,7 @@ layout after `retail.css`.
   the measured boss display and reserve the bottom strip for health/stamina.
 - Settings and Controls scroll their content while retaining their footer. The
   Controls diagram falls back to a readable list when its labels would shrink.
-  Controller D-pad scrolls the Controls list and the correspondence archive.
+  On a controller the D-pad moves focus and the right stick (or a held trigger) scrolls long lists (core/menuNav.js).
 - The workshop scrolls choices/summary, keeps order/cancel visible, and follows
   keyboard/controller selection. At narrow widths its columns stack vertically.
 - PA reading time follows message length (4.5–12 seconds); purchases remain for

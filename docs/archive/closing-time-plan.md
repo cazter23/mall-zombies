@@ -1,6 +1,6 @@
 # Closing Time: plan for a run goal, an ending and a final boss
 
-Status (12 November 2026): ALL TWELVE PHASES ARE BUILT. Phase 12 (spectacle: her model and trolley, the van's lights and engine, Last Call, the receipt's art) is described in docs/history.md. Since the plan, Return to Sender comes free from a hidden quest and the duties award return labels (docs/history.md, "The Return"), so decisions 6 and 8 are superseded. Phase 11's measurement report predated that and was removed; `npm run sim:closing` measures today's game.
+Status (12 November 2026): ALL TWELVE PHASES ARE BUILT. Phase 12 (spectacle: her model and trolley, the van's lights and engine, Last Call, the receipt's art) is described in docs/history.md. Since the plan, Return to Sender comes free from a hidden quest and the duties award return labels (docs/archive/history-2026-11-mid.md, "The Return"), so decisions 6 and 8 are superseded. Phase 11's measurement report predated that and was removed; `npm run sim:closing` measures today's game.
 Every number is a starting point for `src/config/closingTime.js` and `config/economy.js`, to be tuned in phase 11. Build one phase at a
 time, each in its own worktree.
 
@@ -15,7 +15,7 @@ time, each in its own worktree.
 5. **After the win: a choice, and overtime is harder.** The receipt offers Clock out or Stay for overtime. In overtime zombies scale faster and
    kills pay more.
 6. **Return to Sender is bought:** 10,000 at a Returns Desk, once lines 1 to 3 are ticked. The claw keeps its rare copy.
-   **SUPERSEDED 11 November 2026:** the gun now comes free from a hidden quest at the desk (config/returnQuest.js; docs/history.md, "The Return"). The duties stay required to win and each awards a return label instead. The desk still sells the ammo.
+   **SUPERSEDED 11 November 2026:** the gun now comes free from a hidden quest at the desk (config/returnQuest.js; docs/archive/history-2026-11-mid.md, "The Return"). The duties stay required to win and each awards a return label instead. The desk still sells the ammo.
 7. **Prices stay light:** 12,000 for the required steps.
 8. **Return to Sender's ammo is sold only at the Returns Desk**, at a steep price. That is the overtime point sink.
 9. **A key is a floor pickup**, dropped where its boss fell.
@@ -180,7 +180,7 @@ not only in overtime, so a claw-won copy gets dearer to feed from the day this i
 | The four bosses | Yes, all | One key each. The quest is why you want them dead rather than a tax on a round |
 | Boss vouchers | Not required | They help: the Master Key opens an area the quest needs, the Discount Code takes 2,000 off the validation or the Returns Desk |
 | Hazards: Electrified Fountain | Yes | Line 1 |
-| Hazards: Fryer Blast, Fire Sprinklers, PA Lure (planned, not built) | No | |
+| Hazards: Fryer Blast, Fire Sprinklers, PA Lure (built since: docs/archive/hazards-plan.md) | No | |
 | Build-A-Blaster ritual | Yes | Line 3 |
 | Customer Parking and its vans | Yes | The exit, the arena, cover that crashes her charge |
 | Death receipt | Yes | The win receipt and the checklist line on a death |
@@ -262,7 +262,7 @@ Notes for whoever builds a phase:
 - **Phase 10** changes zombie health, a shared system: run the full suite and `npm run balance`.
 - **Tests**: one file, tests/closingTime.test.js, grown a phase at a time (and described in docs/tests.md, or tests/docs.test.js fails). Build
   the map before seeding `Math.random`. Each phase adds a history entry and its folder-structure lines.
-- **The shopping window** (branch `claude/shopping-window`, in progress: a 20 s break with a hold to end it early) fits this: duties are things
+- **The shopping window** (built 10 November 2026: a 20 s break with a hold to end it early) fits this: duties are things
   to do in the break. Nothing here depends on it.
 
 ## Risks

@@ -1,4 +1,4 @@
-// Vaults never go sideways, and the magnet stays forgiving (docs/vault-notes.md, 15 November 2026). Both sides of the same rule,
+// Vaults never go sideways, and the magnet stays forgiving (docs/archive/vault-notes.md, 15 November 2026). Both sides of the same rule,
 // on REAL obstacles in the mall (a HOFFMAN'S counter, the start-room counter, a Mega Mart checkout, the Atrium and Promenade
 // balcony rails), through the real PlayerController driven by a stick (input.padMove), so any angle between where you move and
 // where you look is possible (keys only make 0, 45 and 90 degrees).

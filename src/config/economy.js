@@ -96,13 +96,13 @@ export const economy = {
   wallBuys: {
     priceGun: { weapon: 500, ammo: 250 },
     nailGun: { weapon: 1000, ammo: 500 },
-    // Reserved for the guns planned for the Mega Mart and the Service Corridor (inert until those exist in config/weapons.js)
+    // The Mega Mart's and the Service Corridor's guns:
     foamDartBlaster: { weapon: 1200, ammo: 600 },
     confettiCannon: { weapon: 1500, ammo: 500 }, // (was 750: dearer than the 400 RESTOCK-O-MATIC refill)
     // The three late guns (priced from `npm run balance`): ammo about half the gun, like the others.
     rivetRifle: { weapon: 1500, ammo: 750 }, // stronger automatic rifle; smaller magazine and quicker handling than Coil (Grand Atrium)
     coilNailer: { weapon: 2500, ammo: 650 }, // late Cinema purchase: large drum, slow reload and 2-target pierce
-    barcodeScanner: { weapon: 1750, ammo: 600 }, // a full 420 beam every scan, pierces 4, rings up what it hits (HOFFMAN'S; 13 November 2026 rework). Ammo was 900: the dearest refill for the fewest shots (docs/balance-review.md, G5)
+    barcodeScanner: { weapon: 1750, ammo: 600 }, // a full 420 beam every scan, pierces 4, rings up what it hits (HOFFMAN'S; 13 November 2026 rework). Ammo was 900: the dearest refill for the fewest shots (docs/archive/balance-review.md, G5)
   },
 
   // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. 1,500 = what a site's first grab wins in wall value (it was 1,000 and
@@ -130,7 +130,7 @@ export const economy = {
 
   wardrobe: {
     paperHat: 750, aviators: 1250, glasses: 1500,
-    cardigan: 1500, sandwichBoard: 1500, hiVisVest: 1250, // (cardigan was 2,500: the same four Shopper hits as the Sandwich Board for 1,000 more; docs/balance-review.md, P4)
+    cardigan: 1500, sandwichBoard: 1500, hiVisVest: 1250, // (cardigan was 2,500: the same four Shopper hits as the Sandwich Board for 1,000 more; docs/archive/balance-review.md, P4)
     lightUpSneakers: 1250, orthopedicWalkers: 1000, wheelieSneakers: 1000,
     fannyPack: 1500, foamFinger: 750, goldCard: 2000,
   },
@@ -147,7 +147,7 @@ export const economy = {
   // Kiosk Kevin (phase 7, from `npm run kiosk`: each at least 40% of what round 2 pays; the Soda Bomb was 300).
   kiosk: { sodaBomb: 500, bubbleWrap: 500, airHorn: 500, sparklerCake: 400, glitterBomb: 750, sentry: 1500 },
 
-  // Closing Time's quest prices (docs/closing-time-plan.md): one Night Safe deposit. Read through g.pricing.priceOf('closing', id).
+  // Closing Time's quest prices (docs/archive/closing-time-plan.md): one Night Safe deposit. Read through g.pricing.priceOf('closing', id).
   // returnsDesk: no longer a price anyone pays (the Return quest issues the gun free: config/returnQuest.js). It stays as the
   // gun's nominal worth, which the claw machine's report reads.
   closing: { nightSafe: 1000, validation: 5000, returnsDesk: 10000, returnsAmmo: 2500 },

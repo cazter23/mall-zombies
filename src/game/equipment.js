@@ -1,5 +1,5 @@
 // =============================================================================
-// EQUIPMENT: Kiosk Kevin's products in your two pockets (docs/kiosk-kevin-plan.md; numbers: config/kiosk.js).
+// EQUIPMENT: Kiosk Kevin's products in your two pockets (docs/archive/kiosk-kevin-plan.md; numbers: config/kiosk.js).
 // A player system like melee, built and ticked by createGame.js (DOM-free, so it runs in the headless tests): g.equipment.
 //
 //   Two pockets, 'lethal' (the `lethal` action: G / RB) and 'tactical' (`tactical`: middle mouse / D-pad right). Each holds ONE

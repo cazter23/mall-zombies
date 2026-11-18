@@ -1,6 +1,8 @@
 # Weapon balance pass — 25 October 2026
 
-Historical record of the 25 October pass. The newer base-weapon pass and measurements are at the top of `docs/history.md`.
+Historical record of the 25 October and 13 November passes. SUPERSEDED: the numbers below are not today's. The 15 November
+human balance pass (docs/archive/balance-review.md, groups 1 and 2) changed them again; today's numbers are in
+src/config/weapons.js and `npm run balance` prints what they do.
 
 ## 13 November 2026 — Rivet Rifle and Heavy Coil Nailer separation
 

@@ -1,4 +1,4 @@
-// Kiosk Kevin phase 5 (docs/kiosk-kevin-plan.md): the Glitter Bomb and the Sparkler Cake, the two products that work through a
+// Kiosk Kevin phase 5 (docs/archive/kiosk-kevin-plan.md): the Glitter Bomb and the Sparkler Cake, the two products that work through a
 // zombie's existing status methods (applyConfusion: Build-A-Blaster's Glitter confusion; applyBurn: its Fryer Oil burn), in the
 // REAL game (tests/helpers/headlessGame.js). Checked: each does its job on Shoppers, Cart Pushers and Mascots; bosses ignore the
 // Glitter Bomb and burn at half strength in the Sparkler Cake; kills pay only through 'kill' (source 'equipment': no 'hit', no +10,

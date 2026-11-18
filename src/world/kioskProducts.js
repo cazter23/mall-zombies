@@ -1,5 +1,5 @@
 // =============================================================================
-// KIOSK KEVIN'S PRODUCTS AS MODELS (docs/kiosk-kevin-plan.md phase 8; colours: config/kiosk.js products' `look`).
+// KIOSK KEVIN'S PRODUCTS AS MODELS (docs/archive/kiosk-kevin-plan.md phase 8; colours: config/kiosk.js products' `look`).
 // One place builds every product's little low-poly model, so the thing on Kevin's counter is the thing you throw:
 //   buildProductModel(id, mat)    ONE item, centred on its middle (how it flies): fx/throwableView.js
 //                                 `userData.base` = how far its bottom sits below the origin; a Sentry's turning head is
