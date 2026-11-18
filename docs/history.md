@@ -2,6 +2,23 @@
 
 Newest first, from 12 November 2026. Older: docs/archive/ (see the end of this file).
 
+## 17 November 2026 - Startup: the title's first frame waits for its shaders (`claude/title-frame`)
+
+After the sign-text fix, the next stall: the title's first frame froze the page for ~2.1-2.5 s (a production build in Chromium).
+A probe split it: issuing every shader's compile took 0.12 s (the browser has KHR_parallel_shader_compile), uploading all 847
+textures 0.4 s, and the first draw waited for the ~50 shaders to finish; a frame after that took ~50 ms. Now
+createFirstFrameGate (fx/shaderWarmup.js) starts three's compileAsync for the whole scene as soon as the map is built, and
+renderTitle draws no 3D until it is done (the title's black fade covers it; the menu is up). A compile that fails or outlasts
+20 s (config/performance.js firstFrame) opens the gate anyway, and ?nowarmup turns it off with the warm-up. On a first launch
+the auto Graphics preset measures the frame rate after the gate opens, so the compile is not counted against the computer.
+- **Merged unmeasured, at the user's call:** the browser pane kept going hidden (no frames, no paint), so there are no clean
+  before/after timings; the old behaviour measured 3.1 s for the startup task, then 2.5 s for the first frame. Worth measuring
+  in a visible pane (long tasks: `PerformanceObserver` 'longtask', buffered) and in Firefox, where `npm run play` opens it.
+- Without KHR_parallel_shader_compile, compileAsync compiles synchronously: the freeze then happens before the title's first
+  frame instead of during it, no longer.
+- Not done: the ~0.8 s between the title being set up and its first frame (the browser's own work, not the game's code: needs
+  a profiler); main.js is only requested after the fonts (~0.1 s).
+
 ## 17 November 2026 - Startup: the signs stop measuring their text a dozen times over (`claude/sign-text`)
 
 The game took 13-18 s from opening the page to the title's first frame (a production build in Chromium), with a blank page

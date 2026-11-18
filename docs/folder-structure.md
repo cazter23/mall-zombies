@@ -896,7 +896,9 @@ src/                    The game. Everything the browser loads starts at boot.js
                         across it, brightening with the charge (barcodeScanner.scanLine).
     shaderWarmup.js     Nothing compiles or uploads mid-fight: keeps every shader for the session (keepPrograms), compiles every material behind the title
                         (compileAsync), then draws every object once (drawOnce), plus one zombie of every type (zombies/warmupModels.js). Again when a Graphics
-                        setting changes the shaders; ?nowarmup skips it.
+                        setting changes the shaders; ?nowarmup skips it. createFirstFrameGate({ renderer, scene, camera, target }) -> { ready }:
+                        the title draws no 3D until the scene's shaders are compiled in the background (or 20 s, or a failed compile:
+                        config/performance.js firstFrame), so its first frame doesn't freeze the page.
     throwableView.js    Draws `equipment.live` (Kevin's thrown things; models from world/kioskProducts.js), one pool per look.model: the cola bottle (tumbling,
                         rattling, swelling as the fuse runs out), the Sparkler Cake (spinning, then jittering while it sprays), the Glitter Bomb card, the
                         Sentry (springing up, its head turned to item.yaw, kicking per shot, sagging in its last seconds). dispose().

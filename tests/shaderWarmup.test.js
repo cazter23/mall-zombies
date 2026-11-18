@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import './helpers/headlessGame.js'; // (the canvas stand-in zombie models need)
-import { createShaderWarmup, keepPrograms, releasePrograms, drawOnce, WARM_LAYER } from '../src/fx/shaderWarmup.js';
+import { createShaderWarmup, createFirstFrameGate, keepPrograms, releasePrograms, drawOnce, WARM_LAYER } from '../src/fx/shaderWarmup.js';
 import { buildWarmupZombies, warmupTypes } from '../src/zombies/warmupModels.js';
 import { zombieTypes, mascotTypes, mascotGoldTypes } from '../src/config/zombies.js';
 import { bossTypes } from '../src/config/bosses.js';
@@ -188,4 +188,46 @@ test('one model of every zombie type, Mascot costume and boss builds for the war
   }
   made.dispose();
   assert.equal(scene.children.length, 0, 'disposing takes every model out of the scene');
+});
+
+// The title's first frame waits for its shaders (createFirstFrameGate): no 3D until the background compile is done, then
+// it draws; a compile that fails, throws or never ends still opens the gate, so the title can never stay black for good.
+test('the first-frame gate opens when the background compile is done, into the same target the world is drawn into', async () => {
+  const r = fakeRenderer();
+  let finish;
+  const target = { name: 'composer' };
+  let compiledInto = 'not called';
+  r.compileAsync = (scene) => { compiledInto = r.target; r.compiles.push(scene); return new Promise((resolve) => { finish = resolve; }); };
+  r.target = 'before';
+  const scene = new THREE.Scene();
+  const gate = createFirstFrameGate({ renderer: r, scene, camera: new THREE.PerspectiveCamera(), target: () => target, now: () => 0 });
+  assert.deepEqual(r.compiles, [scene], 'compiling starts at once, for the whole scene');
+  assert.equal(compiledInto, target, 'into the target the world is drawn into (it is part of each shader)');
+  assert.equal(r.target, 'before', 'and the renderer is left on its own target');
+  await settle();
+  assert.equal(gate.ready, false, 'no 3D while the shaders compile');
+  finish();
+  await settle();
+  assert.equal(gate.ready, true, 'then it draws');
+});
+
+test('the first-frame gate never keeps the title black: a stuck, failing or throwing compile still opens it', async () => {
+  let t = 0;
+  const stuck = Object.assign(fakeRenderer(), { compileAsync: () => new Promise(() => {}) });
+  const gate = createFirstFrameGate({ renderer: stuck, scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(), timeoutMs: 1000, now: () => t });
+  t = 999;
+  assert.equal(gate.ready, false);
+  t = 1001;
+  assert.equal(gate.ready, true, 'a compile that outlasts the timeout: draw anyway (it compiles what it needs, as before)');
+
+  const failing = Object.assign(fakeRenderer(), { compileAsync: () => Promise.reject(new Error('lost context')) });
+  const failed = createFirstFrameGate({ renderer: failing, scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(), now: () => 0 });
+  await settle();
+  assert.equal(failed.ready, true, 'a failed compile opens it');
+
+  const throwing = Object.assign(fakeRenderer(), { compileAsync: () => { throw new Error('no compileAsync'); } });
+  throwing.target = 'mine';
+  const threw = createFirstFrameGate({ renderer: throwing, scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(), now: () => 0 });
+  assert.equal(threw.ready, true, 'so does one that throws');
+  assert.equal(throwing.target, 'mine', 'and the renderer is still left on its own target');
 });

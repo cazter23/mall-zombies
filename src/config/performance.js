@@ -22,6 +22,11 @@ export const perf = {
     firstBatch: 24, // objects in the first draw; the batch then grows or shrinks to fit the budget
   },
 
+  // fx/shaderWarmup.js createFirstFrameGate: the title draws no 3D until the shaders it needs are compiled in the background.
+  firstFrame: {
+    timeoutMs: 20000, // ...or until this long has passed (a slow or stuck compile): then it draws and compiles what it needs
+  },
+
   // tests/drawBudget.test.js: the most things any benchmark shot may ask the graphics card to draw (counted headless: the
   // map and its props, no gun, zombies or post-processing), every door open. Set a little over what the mall draws today.
   drawBudget: {
