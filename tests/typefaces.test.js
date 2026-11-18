@@ -51,6 +51,20 @@ test('every configured font is bundled: a @font-face, a file on disk, and a lice
   assert.ok(!/https?:\/\//.test(css), 'fonts.css must not load anything from the network');
 });
 
+test('every bundled family ships with its licence: the full text in src/fonts/licenses/, and a row in src/fonts/LICENSES.md', () => {
+  const credits = readFileSync('src/fonts/LICENSES.md', 'utf8');
+  for (const [name, def] of Object.entries(families)) {
+    const file = `src/fonts/licenses/${slug(name)}.txt`;
+    assert.ok(existsSync(file), `${name}: add its licence text as ${file} (from its @fontsource package's LICENSE)`);
+    const text = readFileSync(file, 'utf8');
+    const kind = /SIL OPEN FONT LICENSE/i.test(text) ? 'OFL' : /Apache License/.test(text) ? 'Apache' : null;
+    assert.equal(kind, def.license, `${name}: config/typefaces.js says ${def.license}, its licence file is ${kind}`);
+    assert.ok(credits.includes(`| ${name} |`) && credits.includes(`(licenses/${slug(name)}.txt)`), `${name}: add its row to src/fonts/LICENSES.md`);
+  }
+  const shipped = readdirSync('src/fonts/licenses').map((f) => f.replace('.txt', ''));
+  for (const s of shipped) assert.ok(Object.keys(families).some((name) => slug(name) === s), `src/fonts/licenses/${s}.txt: no such family in config/typefaces.js`);
+});
+
 test('no module writes a raw font string: text asks for a role', () => {
   // HUD / minimap text (DOM + the minimap canvas) is outside the 3D-world type system.
   const allowed = new Set(['src/config/typefaces.js', 'src/config/fonts.js', 'src/config/minimap.js', 'src/world/typeKit.js', 'src/ui/minimap.js']);

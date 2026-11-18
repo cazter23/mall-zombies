@@ -37,6 +37,14 @@ measurement at a font size it hasn't used costs ~2 ms (it sets up that size; bel
   the 0.8 s before that frame starts (not traced); main.js is only requested after the fonts (~0.1 s); a loading screen instead
   of a blank page. Measured in Chromium only: `npm run play` opens Firefox, whose numbers will differ (fewer measurements helps
   in any browser).
+## 17 November 2026 - The font licences ship with the fonts (`claude/font-licences`)
+
+The 25 bundled families (20 SIL OFL 1.1, 5 Apache 2.0) were in the repo without their licence texts, which both licences require
+when the fonts are redistributed (the repo is public). Now src/fonts/licenses/<slug>.txt holds each family's LICENSE, copied unchanged
+from its @fontsource package on jsDelivr (where the .woff2 files came from), and src/fonts/LICENSES.md lists each family's licence and
+copyright notice. Every licence matched what config/typefaces.js already declared. Big Shoulders Display's published licence file names only
+"Google Inc."; it is kept as published, and the credits use the notice in the font file itself (The Big Shoulders Project Authors). tests/typefaces.test.js now fails if a family has no licence file, a
+file of the wrong kind, or no row in LICENSES.md. No game code changed.
 
 ## 17 November 2026 - The docs brought up to date and tidied (`claude/docs-cleanup`)
 
