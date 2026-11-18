@@ -111,6 +111,38 @@ export function drawOnce(renderer, view, objects, target) {
   renderer.setRenderTarget(before);
 }
 
+/**
+ * THE TITLE'S FIRST FRAME WAITS FOR ITS SHADERS. Measured (17 November 2026, docs/history.md): the first title frame stalled the
+ * page for ~2 s, nearly all of it the browser finishing the ~50 shaders it needed there and then (uploading every texture
+ * took 0.4 s; a frame after that, ~50 ms). This starts compiling everything the view can show at once (three's compileAsync:
+ * where the browser has KHR_parallel_shader_compile that happens off the page's thread), and `ready` turns true when it is
+ * done. Until then main.js draws no 3D (the title's black fade covers it; the menu is up and usable). A compile that fails or
+ * outlasts `timeoutMs` opens the gate anyway: the first draw then compiles what it needs, as it always did.
+ *   const gate = createFirstFrameGate({ renderer, scene, camera, target, timeoutMs, now })
+ *   gate.ready   (checked each frame; `now` is read then, so a timeout needs no timer)
+ */
+export function createFirstFrameGate({ renderer, scene, camera, target = () => null, timeoutMs = perf.firstFrame.timeoutMs, now = () => performance.now() }) {
+  let done = false;
+  const started = now();
+  const before = renderer.getRenderTarget();
+  renderer.setRenderTarget(target()); // (which target the world is drawn into is part of each shader)
+  let compiling;
+  try {
+    compiling = renderer.compileAsync(scene, camera);
+  } catch {
+    compiling = null;
+  }
+  renderer.setRenderTarget(before);
+  if (!compiling) done = true;
+  else Promise.resolve(compiling).catch(() => {}).then(() => { done = true; });
+  return {
+    get ready() {
+      if (!done && now() - started > timeoutMs) done = true;
+      return done;
+    },
+  };
+}
+
 export function createShaderWarmup({
   renderer, views, target = () => null, signature = () => '', extras = null, holdOff = () => false,
   budgetMs = perf.warmup.budgetMs, firstBatch = perf.warmup.firstBatch, now = () => performance.now(),

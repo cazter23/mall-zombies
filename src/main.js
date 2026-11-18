@@ -75,7 +75,7 @@ import { createZoneGrading, gradeZoneAt } from './fx/zoneGrading.js';
 import { setRimDaylight, setStragglerPulse, syncStragglerHighlights } from './zombies/zombieRim.js';
 import { createDetailCulling } from './fx/detailCulling.js';
 import { createRoomCulling } from './fx/roomCulling.js';
-import { createShaderWarmup } from './fx/shaderWarmup.js';
+import { createShaderWarmup, createFirstFrameGate } from './fx/shaderWarmup.js';
 import { buildWarmupZombies } from './zombies/warmupModels.js';
 import { look } from './config/look.js';
 import { powerUps } from './config/powerUps.js';
@@ -382,6 +382,11 @@ const shaderWarmup = new URLSearchParams(location.search).has('nowarmup') ? null
   // this computer). Only on the title: a player who presses Play before the measurement is over still gets the warm-up.
   holdOff: () => !autoGraphics.done && screens.showsFlyover,
 });
+// The title's first frame waits for its shaders (fx/shaderWarmup.js createFirstFrameGate): they compile in the background
+// while the menu is already up, instead of the page freezing ~2 s on the first draw. ?nowarmup turns this off too.
+const firstFrameGate = shaderWarmup ? createFirstFrameGate({
+  renderer, scene, camera, target: () => (postProcessing.usesComposer ? postProcessing.composer.renderTarget1 : null),
+}) : null;
 
 // --- Menus and the run's flow ------------------------------------------------------
 // title (live flyover) -> playing <-> paused -> dead -> results receipt -> playing again / title.
@@ -768,6 +773,10 @@ function render(alpha, frameTime) {
 // The main menu's backdrop: the camera glides through the mall (map.titleShots), fading through black at each cut.
 // The game itself is frozen (nothing ticks without the mouse lock or a controller), and no gun or body is drawn.
 function renderTitle(frameTime) {
+  if (firstFrameGate && !firstFrameGate.ready) { // (shaders still compiling: the black fade, the menu, no 3D yet)
+    screens.setFade(1);
+    return;
+  }
   autoGraphics.frame(frameTime);
   titleCamera.update(frameTime);
   if (camera.fov !== feel.titleScreen.fov) {
@@ -826,6 +835,7 @@ if (debugOn && debug.exposeToWindow) {
     settings, lightPool, loop, idleSaver, // (settings.set(id, value) as the menu would; the light pool)
     vanLights, // (Skylar's van: update / start, fx/vanLights.js)
     shaderWarmup, // (.state 'compiling' | 'drawing' | 'done', .left, .kept: fx/shaderWarmup.js)
+    firstFrameGate, // (.ready: the title's shaders are compiled and it draws; null with ?nowarmup)
     doorOpenView, // (a bought door's dust and light spill: .active = glow slots lit, fx/doorOpenView.js)
     // Map objects that were moved although their matrix is frozen (they need a userData.dynamic parent): expect [].
     movedWhileFrozen: () => movedWhileFrozen(map.group),
