@@ -4,7 +4,7 @@
 // The bag sits on the floor for a while: walk over it to take it. Only something you have ROOM for is ever in a bag, so it never
 // replaces what you carry; if you no longer have room when you get there (you bought something else), it waits until it runs out.
 // One bag at a time. Built and ticked by game/createGame.js (g.bagDrops); DOM-free. reset() takes the bag away.
-// (This replaced the Party Trap and Clearance Rack Limited Editions on 15 November 2026: docs/balance-review.md.)
+// (This replaced the Party Trap and Clearance Rack Limited Editions on 15 November 2026: docs/archive/balance-review.md.)
 //
 //   const bags = createBagDrops({ events, equipment, health, player, scene, getRound, state, sound })
 //   bags.update(dt) / bags.reset()

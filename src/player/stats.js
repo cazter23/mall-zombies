@@ -1,8 +1,8 @@
 // =============================================================================
 // PLAYER STATS
-// One object holds every player stat. Later systems (wardrobe perks, skill
-// tree, food court buffs) should modify THIS object instead of touching config
-// or controller code. The controller reads from it every tick.
+// One object holds every player stat. Systems that change the player (the
+// Wardrobe, power-ups, Second Chance) modify THIS object instead of touching
+// config or controller code. The controller reads from it every tick.
 // A new run puts every stat back to its base value (resetPlayerStats), so nothing
 // bought or earned in one run carries into the next.
 // =============================================================================

@@ -867,10 +867,10 @@ export function buildMall(scene, colliders) {
     // The first real upgrade, on the hallway's south wall (east of the Food Court door): available as
     // soon as the start shutter is open, like it was in the old concourse.
     { name: 'wallbuy_hallway', zone: 'hallway', weapon: 'nailGun', position: new THREE.Vector3(11, 1.5, H.minZ + 0.02), normal: new THREE.Vector3(0, 0, 1) },
-    // The Mega Mart toy section. (A wall buy for a gun that doesn't exist in config/weapons.js +
-    // economy.wallBuys yet is inert: game/features/wallBuy.js skips it.)
+    // The Mega Mart toy section. (A wall buy for a gun that isn't in config/weapons.js + economy.wallBuys
+    // is inert: game/features/wallBuy.js skips it.)
     { name: 'wallbuy_megaMart', zone: 'megaMart', weapon: 'foamDartBlaster', position: new THREE.Vector3(31.5, 1.5, M.maxZ - 0.02), normal: new THREE.Vector3(0, 0, -1) },
-    // Reserved the same way: the Service Corridor's west wall near its dead end (between the lockers and the crates).
+    // The Service Corridor's west wall near its dead end (between the lockers and the crates).
     (() => {
       const p = service.pointAt(1, 14.2, 'left', 0.02);
       return { name: 'wallbuy_serviceCorridor', zone: 'serviceCorridor', weapon: 'confettiCannon', position: new THREE.Vector3(p.x, 1.5, p.z), normal: new THREE.Vector3(p.normal.x, 0, p.normal.z) };

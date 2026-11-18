@@ -65,7 +65,7 @@ What is NOT uniform today, and is the real work:
 
 Slot 1 is the same shape on every gun: **400 kills with it across all runs** (Return to Sender: 150, it is rare; phase 8 made these 1000 and 300). Slots 2 and 3 below are
 first guesses written from each gun's name and place in the mall, NOT from its numbers. Phase 5 must check every one against
-docs/weapon-balance-pass.md and `npm run balance` so that each is possible, and hard in the way intended.
+docs/archive/weapon-balance-pass.md and `npm run balance` so that each is possible, and hard in the way intended.
 
 | Gun | Slot 2: Role | Slot 3: Feat (one run) |
 |---|---|---|

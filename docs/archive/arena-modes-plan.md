@@ -1,8 +1,9 @@
 # Arena Survival: the plan (`claude/arena-modes`, 15 November 2026)
 
 Extra Modes on the run-mode screen: survive as many rounds as you can locked in ONE part of the mall. Three arenas: the Start
-Room, the Sunset Cinema and Customer Parking. Everything below is a decision already made; the open questions for the user are
-at the end.
+Room, the Sunset Cinema and Customer Parking. Everything below is a decision already made.
+
+Status: ALL FIVE PHASES BUILT and merged (15 November 2026), plus the WEAR-O-MATIC machine (17 November 2026).
 
 ## The rules of an arena
 

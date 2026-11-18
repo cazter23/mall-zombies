@@ -1,5 +1,5 @@
 // =============================================================================
-// KIOSK KEVIN'S SPECTACLE (browser side; phase 8 of docs/kiosk-kevin-plan.md; looks: config/kiosk.js spectacle).
+// KIOSK KEVIN'S SPECTACLE (browser side; phase 8 of docs/archive/kiosk-kevin-plan.md; looks: config/kiosk.js spectacle).
 // Everything here is for the eyes: it LISTENS to the game's events and draws, and nothing in the game reads it back.
 //   Kevin      every cart's animation (maps/mall/kioskCart.js animate: the lid, Kevin ducking and waving and turning to you)
 //              and his shouts ('kioskHawk': the speech bubble over him, and a short "hey!")

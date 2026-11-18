@@ -1,5 +1,5 @@
 // =============================================================================
-// ARENA SURVIVAL (Extra Modes on the run-mode screen; the plan: docs/arena-modes-plan.md). Survive as long as you can locked
+// ARENA SURVIVAL (Extra Modes on the run-mode screen; the plan: docs/archive/arena-modes-plan.md). Survive as long as you can locked
 // in ONE part of the mall. Each arena: its zones (only these are open; every exit is sealed), where you start, the spawn
 // markers it adds, and the fixtures it adds (map data, built by maps/mall/arenas.js, game/features/ by kind). Nothing here
 // exists in a normal run.

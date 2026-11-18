@@ -159,7 +159,7 @@ export const closingTime = {
     },
   },
   overtimeTag: 'OVERTIME', // beside the round counter while overtime is played (ui/hud.js)
-  // OVERTIME's two changes (game/closingTime.js; docs/closing-time-plan.md "Overtime"). Nothing changes before the win.
+  // OVERTIME's two changes (game/closingTime.js; docs/archive/closing-time-plan.md "Overtime"). Nothing changes before the win.
   // healthPerRound: every zombie and boss spawned in overtime has its health x this, compounded once per overtime round
   //   (the first overtime round is x1.03, the fifth x1.03^5), on top of the normal round scaling. Counts, spawn pace and the
   //   alive cap are untouched.

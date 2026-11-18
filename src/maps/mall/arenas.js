@@ -1,5 +1,5 @@
 // =============================================================================
-// ARENAS (Extra Modes: config/arenas.js; the plan: docs/arena-modes-plan.md): what each arena adds to the mall, and the switch
+// ARENAS (Extra Modes: config/arenas.js; the plan: docs/archive/arena-modes-plan.md): what each arena adds to the mall, and the switch
 // that turns one on. Nothing here is there in a normal run.
 //
 // Each arena's own fixtures are built into ITS OWN hidden group (userData.dynamic: the static batcher and freezer leave it

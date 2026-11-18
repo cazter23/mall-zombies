@@ -1,9 +1,9 @@
 // =============================================================================
 // GUN STATS: the one place gun numbers are combined
 //
-// Layers, in order (upgrades plug into layer 2, perks / wardrobe / skill tree into layer 3):
+// Layers, in order (upgrades plug into layer 2, the wardrobe and other player stats into layer 3):
 //   1. BASE      the gun's entry in config/weapons.js (never modified at runtime)
-//   2. MODS      per-gun upgrades (Build-A-Blaster, future attachments): resolveGun(base, mods)
+//   2. MODS      per-gun upgrades (warranty tiers, attachments, Build-A-Blaster): resolveGun(base, mods)
 //                returns the gun's EFFECTIVE stats as a copy of the base with the mods applied.
 //                Gameplay (weapon.js, aim.js, playerGun.js) reads only that resolved copy.
 //   3. PLAYER    the player's stats object (stats.damageMultiplier, stats.reloadSpeed...), applied

@@ -250,7 +250,7 @@ aim than it suggests, so read those two rows as rough.
 - **Clearance Rack** (the Price Gun): tag three zombies with body shots, then a headshot on a tagged one pops them all for x3.
   - An average human gets a headshot kill about 15-25% of the time with an automatic, so it rarely pays. **Too weak for a human.**
 
-### 3.3 Suggested gun changes (none applied)
+### 3.3 Suggested gun changes (G1-G10 applied; G11 and G12 dropped with the Limited Editions)
 
 The numbers live in src/config/weapons.js unless noted. After any of them: `npm run balance`, and tests/balance.test.js will need its
 thresholds checked.
@@ -375,7 +375,7 @@ hit at 50 a second. You walk at 5 m/s and backpedal at 3.9 (about 2.9 while aimi
 - A Doorbuster checks that you can reach the item in time assuming 10 s of sprinting, but sprint lasts 4 s.
 - Verdict: the ammo sale is useful; the rest are mostly wasted by humans.
 
-### 5.5 Suggested changes for perks and upgrades (none applied)
+### 5.5 Suggested changes for perks and upgrades (P1-P6 applied; P7-P11 open: docs/open-ideas.md)
 
 | # | Change | From → to | What it does |
 |---|---|---|---|

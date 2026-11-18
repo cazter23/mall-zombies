@@ -8,7 +8,7 @@
 //   - a jump that started a moment ago (airGraceSeconds) can still turn into a vault in the air.
 //   - if the straight-ahead landing is blocked (e.g. a wall right behind a bench), it tries a few
 //     slightly angled paths (directionSearchDegrees) over the SAME obstacle before giving up.
-// Never sideways (docs/vault-notes.md): a counter vault goes along your movement and only over a counter you are looking at;
+// Never sideways (docs/archive/vault-notes.md): a counter vault goes along your movement and only over a counter you are looking at;
 // a rail is climbed straight over only when you run and look nearly straight at it (feel.vault.ledge).
 //   - preview(): would pressing jump right now end in a vault? (drives the HUD "Vault" prompt)
 //   - lastResult: why the last attempt failed or "vaulted" (handy when testing in the console).
@@ -50,7 +50,7 @@ function crossing(position, dx, dz, box, padding = 0) {
 export const blocksVault = (body) => body.isAlive && !body.ignoreVault;
 
 // Why a straight vault can fail that a slightly turned path might get round (searchPlan): the landing side, not the approach.
-// (Not 'not looking where it would take you': turning the path toward your view to rescue that was a sideways vault. docs/vault-notes.md)
+// (Not 'not looking where it would take you': turning the path toward your view to rescue that was a sideways vault. docs/archive/vault-notes.md)
 const LANDING_REASONS = new Set(['no floor to land on', 'no room to start', 'path or landing blocked']);
 
 export function createVault({ player, colliders, getBodies = () => [] }) {

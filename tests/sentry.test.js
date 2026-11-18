@@ -1,4 +1,4 @@
-// Kiosk Kevin phase 6 (docs/kiosk-kevin-plan.md): the SPIN-O-MATIC Sentry (game/equipment/sentry.js, game/equipment.js,
+// Kiosk Kevin phase 6 (docs/archive/kiosk-kevin-plan.md): the SPIN-O-MATIC Sentry (game/equipment/sentry.js, game/equipment.js,
 // config/kiosk.js products.sentry), in the REAL game (tests/helpers/headlessGame.js). Checked: thrown with G it deploys where it
 // lands and adds no collider; it shoots the nearest zombie it can see with the hitscan from its own muzzle, never through a wall,
 // never Sunny, a dummy or the dead; its kills pay through 'kill' only (source 'equipment', weaponId 'sentry': no 'hit', no +10, no

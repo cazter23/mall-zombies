@@ -35,7 +35,7 @@ export const upgrades = {
     { id: 'deluxe', name: 'Deluxe', job: 'Handling', color: 0xb9bec6, effects: { damage: 1.1, magazine: 1.25, reload: 0.85 }, holdsUntilRound: 9,
       lines: [{ effect: 'magazine', text: '{Size} bigger magazine' }, { effect: 'reload', text: 'Reloads {size} faster' }, { effect: 'damage', text: '{Size} more damage' }] },
     // A tier REPLACES the one before (weapons/upgrades.js withTier), so each keeps at least the previous tier's handling: Premium used to
-    // shrink Deluxe's magazine (1.25 -> 1.1) and take its faster reload away (docs/balance-review.md, P1).
+    // shrink Deluxe's magazine (1.25 -> 1.1) and take its faster reload away (docs/archive/balance-review.md, P1).
     { id: 'premium', name: 'Premium', job: 'Damage', color: 0xdf9f1f, effects: { damage: 1.45, magazine: 1.3, reload: 0.85 }, holdsUntilRound: 12,
       lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'magazine', text: '{Size} bigger magazine' }, { effect: 'reload', text: 'Reloads {size} faster' }] },
     { id: 'platinum', name: 'Platinum', job: 'Damage and claims', color: 0xf2eefc, effects: { damage: 1.9, magazine: 1.35, reload: 0.8 }, holdsUntilRound: 16, claim: true, // (damage was 1.65: 14% over Premium for 6,000; docs/economy-report.md, C. Magazine 1.15 -> 1.35, reload 0.9 -> 0.8: P1)

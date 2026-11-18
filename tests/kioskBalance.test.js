@@ -1,4 +1,4 @@
-// Kiosk Kevin's balance bar (docs/kiosk-kevin-plan.md, phase 7 "Done when"), read from the same maths `npm run kiosk` prints
+// Kiosk Kevin's balance bar (docs/archive/kiosk-kevin-plan.md, phase 7 "Done when"), read from the same maths `npm run kiosk` prints
 // (tools/kioskBalance.js), and the report itself still runs. The Bubble Wrap maths is checked against the real game's health.
 import assert from 'node:assert/strict';
 import test from 'node:test';

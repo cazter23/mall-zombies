@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-// Test files running at once when MALL_TEST_JOBS is not set. Measured on a 16 GB / 20-thread PC (docs/history.md, the
+// Test files running at once when MALL_TEST_JOBS is not set. Measured on a 16 GB / 20-thread PC (docs/archive/history-2026-11-mid.md, the
 // test runner entry): each process peaks at ~500-600 MB, so 4 is ~2.4-4 GB a run where the default was ~9 GB.
 export const DEFAULT_JOBS = 4;
 // Runs of this many files or fewer skip the lock (a handful of processes; fixing a failure should never queue).

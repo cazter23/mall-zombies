@@ -8,7 +8,7 @@
 // =============================================================================
 
 export const kiosk = {
-  // WHERE KEVIN IS (docs/kiosk-kevin-plan.md, "Where Kevin is"). Every site has a cart in the map all the time (maps/mall/kioskCart.js);
+  // WHERE KEVIN IS (docs/archive/kiosk-kevin-plan.md, "Where Kevin is"). Every site has a cart in the map all the time (maps/mall/kioskCart.js);
   // only one is live, the others say "BACK IN 5 MIN" (no collider is added or moved at runtime). Every run starts at the FIRST site.
   // Every `moveEveryRounds` rounds after the opening round (`openingRound + 3, + 6...`) at 'roundStart' he moves to a random OTHER site
   // whose zone is open (none open: he stays put), never mid-purchase (the move waits until the hold is let go) and never into a locked zone. game/features/kiosk.js.

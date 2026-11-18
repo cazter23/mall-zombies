@@ -17,7 +17,7 @@
 //
 //   runBot({ seed, skill, plan, maxRound, immortal, onGame }) -> { outcome, round, earned, spent, rounds: [per round], purchases, ... }
 //   onGame(g): called once the game is built, before round 1 (tools/challengeReport.mjs listens to its events)
-// Ported from the review bot of 9 November 2026 (docs/history.md); the claw step and the income split are new.
+// Ported from the review bot of 9 November 2026 (docs/archive/history-2026-11-mid.md); the claw step and the income split are new.
 // =============================================================================
 
 import * as THREE from 'three';

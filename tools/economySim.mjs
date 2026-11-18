@@ -73,7 +73,7 @@ const GROUPS = [
   group('claw', 'CLAW_FIRST', 'good', false, CLAW_ROUNDS, 'none', SEEDS),
   group('claw', 'SENSIBLE', 'good', false, CLAW_ROUNDS, 'none', SEEDS),
   group('claw', 'CLAW_FIRST', 'good', true, 30, 'none', MORTAL_SEEDS),
-  group('kiosk', 'KIOSK', 'good', false, ROUNDS, 'none', FEW), // Kiosk Kevin every break (docs/kiosk-kevin-plan.md, phase 7)
+  group('kiosk', 'KIOSK', 'good', false, ROUNDS, 'none', FEW), // Kiosk Kevin every break (docs/archive/kiosk-kevin-plan.md, phase 7)
   group('kiosk', 'KIOSK', 'good', true, 30, 'none', MORTAL_SEEDS),
   ...MORTAL_ONLY.map((id) => group('after', PROPOSALS[id].plan ?? 'SENSIBLE', 'good', true, 30, id, MORTAL_SEEDS)),
   group('after', PROPOSALS.all.plan, 'average', true, 30, 'all', MORTAL_SEEDS),

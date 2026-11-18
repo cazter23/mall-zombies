@@ -180,7 +180,7 @@ export const weapons = {
     fireMode: 'auto',
     damage: 58, // round-1 Shopper (150 HP): 3 body shots or 2 headshots (was 70: within 11% of the Rivet Rifle for a sixth of its route; docs/economy-report.md, A)
     headshotMultiplier: 1.5,
-    magazineSize: 30, // (was 24: a human misses, so it emptied about 17 times a round at round 15; docs/balance-review.md, G1)
+    magazineSize: 30, // (was 24: a human misses, so it emptied about 17 times a round at round 15; docs/archive/balance-review.md, G1)
     startingReserve: 180, // six magazines; also the reserve cap for ammo buys (was 144)
     fireInterval: 0.083, // ~12 shots per second while held
     fireBuffer: 0.1,
@@ -309,7 +309,7 @@ export const weapons = {
     // Each nail goes through up to maxTargets zombies in a line (walls still stop it), doing a bit less
     // damage to each one it has already passed through.
     pierce: { maxTargets: 3, damageFalloff: [1, 0.8, 0.6] },
-    magazineSize: 12, // (was 10, reserve 60: ran dry 1-3 times a round for a human; docs/balance-review.md, G4)
+    magazineSize: 12, // (was 10, reserve 60: ran dry 1-3 times a round for a human; docs/archive/balance-review.md, G4)
     startingReserve: 90,
     fireInterval: 0.25, // ~4 shots per second at most
     fireBuffer: 0.1,
@@ -430,7 +430,7 @@ export const weapons = {
     id: 'foamDartBlaster', name: 'Foam Dart Blaster', fireMode: 'burst',
     weight: 'light', // how it handles: gunWeights below
     burst: { count: 3, interval: 0.07 },
-    damage: 100, headshotMultiplier: 1.75, // 300 body damage per full burst (was 90: kept level with the Rivet Rifle's human pass; docs/balance-review.md, G3)
+    damage: 100, headshotMultiplier: 1.75, // 300 body damage per full burst (was 90: kept level with the Rivet Rifle's human pass; docs/archive/balance-review.md, G3)
     magazineSize: 30, startingReserve: 180, // ten full bursts; six magazines in reserve (was 144)
     fireInterval: 0.16, // pause after the LAST dart; three darts every 0.3 s
     fireBuffer: 0.12, reloadTime: 1.9, range: 100,
@@ -594,7 +594,7 @@ export const weapons = {
   rivetRifle: {
     id: 'rivetRifle', name: 'Rivet Rifle', fireMode: 'auto',
     weight: 'heavy', // how it handles: gunWeights below
-    damage: 90, headshotMultiplier: 2, // lighter per-hit than Coil; x2 makes a headshot 180, above a Foam dart's 175 (was 80: good until round 9 for an average human; docs/balance-review.md, G2)
+    damage: 90, headshotMultiplier: 2, // lighter per-hit than Coil; x2 makes a headshot 180, above a Foam dart's 175 (was 80: good until round 9 for an average human; docs/archive/balance-review.md, G2)
     magazineSize: 36, startingReserve: 216, // (36: at 0.085 s a shot a 30 ran dry in 2.5 s and sat under the Foam Dart Blaster sustained; 216 = six magazines, was 144)
     fireInterval: 0.085, fireBuffer: 0.1, reloadTime: 2, range: 100, // ~11.8 shots/s
     falloff: { start: 12, end: 28, minMultiplier: 0.6 },
@@ -749,7 +749,7 @@ export const weapons = {
     // The scan line on the target while charging (fx/scanLine.js): a red laser from the gun to what you aim at, and a bar sweeping it.
     // (barLift: m the bar sits in front of what it scans, toward you.)
     scanLine: { color: 0xff2a38, laserWidth: 0.012, barWidth: 0.85, barHeight: 0.045, barLift: 0.3, sweep: 0.9, sweepHz: 3, opacity: 1, maxRange: 60 },
-    magazineSize: 10, startingReserve: 40, // (magazine was 8: the fewest shots of any wall gun; docs/balance-review.md, G5)
+    magazineSize: 10, startingReserve: 40, // (magazine was 8: the fewest shots of any wall gun; docs/archive/balance-review.md, G5)
     fireInterval: 0.2, fireBuffer: 0.12, reloadTime: 1.8, range: 100,
     falloff: { start: 12, end: 30, minMultiplier: 0.6 }, // a store-aisle gun, not a sniper: the Stargazer keeps the long hits
     recoil: {
@@ -1076,7 +1076,7 @@ export const weapons = {
     weight: 'veryHeavy', // how it handles: gunWeights below
     damage: 300, headshotMultiplier: 3, // the headshot gun: the biggest multiplier there is
     // RISING falloff: full (1x) up to `start`, then up in a straight line to minMultiplier (2x) at `end` and beyond. (end was 30 m, a range the mall
-    // rarely offers; 20 m is where its long sightlines are: docs/balance-review.md, G6)
+    // rarely offers; 20 m is where its long sightlines are: docs/archive/balance-review.md, G6)
     falloff: { start: 8, end: 20, minMultiplier: 2 },
     pierce: { maxTargets: 4, damageFalloff: [1, 0.85, 0.7, 0.55] }, // a bearing goes through a queue of shoppers
     magazineSize: 5, startingReserve: 30,
@@ -1204,7 +1204,7 @@ export const weapons = {
       radius: 3.5, edgeFraction: 0.25, // m; the damage at the very edge is edgeFraction of the centre's
       // your own blast: up to 30% of your max health at its centre, never more than 50%; the view jolts down. ignoreBelow (health points): less than this
       // is no hit at all (the Hi-Vis Vest's 0.01 leaves at most 0.3: harmless, no hurt flash, no regen reset). (Was 45% / 75%: humans fire at crowds
-      // that are on top of them; 30% still bites from 1.5 m, tests/bottleRocket.test.js. docs/balance-review.md, G7)
+      // that are on top of them; 30% still bites from 1.5 m, tests/bottleRocket.test.js. docs/archive/balance-review.md, G7)
       self: { share: 0.3, maxShare: 0.5, joltDegrees: 3, ignoreBelow: 1 },
       look: { colors: [0xff3b3b, 0xffd23f, 0x3ad1ff, 0xff5ec8, 0xffffff], count: 46, speed: 6, size: 0.07 }, // the firework burst (effects.confetti)
       flash: { color: 0xffe08a, size: 2.2, seconds: 0.18 },
@@ -1316,7 +1316,7 @@ export const weapons = {
     damage: 200, headshotMultiplier: 1, // (at the pop's centre; a pop has no headshots)
     // It keeps up a little with the rounds, like the Tennis Ball Launcher (0.85): x(that round's Shopper health / 150) ^ 0.4, the round the TARGET
     // spawned in (weapons/gunStats.js roundDamageScale): about 450 at round 15, 600 at round 25. A flat 200 was a quarter of a round-10 zombie
-    // (docs/balance-review.md, G8).
+    // (docs/archive/balance-review.md, G8).
     roundScaling: { exponent: 0.4 },
     blast: {
       radius: 1.3, edgeFraction: 0.5, // a small pop: the zombie it touched, and maybe one beside it
@@ -1454,7 +1454,7 @@ export const weapons = {
     },
     impact: { flinch: 0.75, knockback: 0.55, hitstopSeconds: 0, deathImpulse: 1.15 },
     spread: {
-      base: 1.8, moving: 2.2, maxMovingFactor: 1.5, airborne: 3.5, // (base was 2.4: the widest automatic, 42% hits for an average player; docs/balance-review.md, G9)
+      base: 1.8, moving: 2.2, maxMovingFactor: 1.5, airborne: 3.5, // (base was 2.4: the widest automatic, 42% hits for an average player; docs/archive/balance-review.md, G9)
       perShot: 0.35, maxBloom: 3.5, bloomRecoveryDelay: 0.12, bloomRecovery: 7,
       smoothing: 12, adsMultiplier: 0.55,
     },

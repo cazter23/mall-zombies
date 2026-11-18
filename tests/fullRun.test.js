@@ -97,7 +97,7 @@ test('Play again puts EVERYTHING back: the game equals a freshly built one', () 
   t.tick(120);
   g.gun.give(weapons.priceGun);
   g.gun.setMods('priceGun', [{ id: 'test', modifiers: [{ stat: 'damage', op: 'add', value: 5 }] }]);
-  // What perks / wardrobe / a skill tree will do: change the player's stats mid-run.
+  // What the wardrobe and power-ups do: change the player's stats mid-run.
   g.stats.walkSpeed *= 1.25;
   g.stats.damageMultiplier = 2;
   g.stats.maxHealth += 50;

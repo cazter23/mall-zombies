@@ -244,7 +244,7 @@ test('pellet ADS cone tightens continuously; pellets and pierce can be combined'
 
 test('burst darts and cannon blasts meet their early, middle and later round damage targets', () => {
   const table=[
-    [1,2,1,1,1,2], [8,7,4,1,1,9], [15,12,7,2,2,14], // (Foam darts 90 -> 100: docs/balance-review.md)
+    [1,2,1,1,1,2], [8,7,4,1,1,9], [15,12,7,2,2,14], // (Foam darts 90 -> 100: docs/archive/balance-review.md)
   ];
   for(const [round,bodyDarts,headDarts,bodyBlasts,headBlasts,farBlasts] of table){
     const hp=zombieHealthForRound(round), foam=weapons.foamDartBlaster, confetti=weapons.confettiCannon;
