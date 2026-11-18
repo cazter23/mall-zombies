@@ -134,4 +134,5 @@ is the rulebook those agents follow, and the large test suite is what keeps thei
 
 ## License
 
-[MIT](LICENSE). The bundled fonts in `src/fonts/` keep their own open licenses (SIL Open Font License or Apache 2.0; each family's is listed in [`src/config/typefaces.js`](src/config/typefaces.js)).
+[MIT](LICENSE). The bundled fonts in `src/fonts/` keep their own open licenses (SIL Open Font License 1.1 or Apache 2.0): see
+[`src/fonts/LICENSES.md`](src/fonts/LICENSES.md) for each family's copyright and licence, and `src/fonts/licenses/` for the full texts.

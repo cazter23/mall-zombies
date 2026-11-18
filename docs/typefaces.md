@@ -13,7 +13,8 @@ who made it. HUD and menus (DOM, `style.css`, the minimap canvas) are out of sco
 2. Treatments (case, tracking, slant, outline, hard shadow, glow, gradient fill) are options of `drawType`, defaulting to the role.
 3. Text shrinks to fit and is never clipped (`maxWidth`).
 4. A sign layout (`makeSignTexture` style) has a default role per kind (`signKinds`); a landmark overrides with `font: '<role>'`.
-5. New family: its `.woff2` in `src/fonts/files/` (Fontsource Latin subset), an entry in `families`, then `node tools/buildFontCss.mjs`.
+5. New family: its `.woff2` in `src/fonts/files/` (Fontsource Latin subset), an entry in `families`, then `node tools/buildFontCss.mjs`;
+   and its licence: the package's LICENSE as `src/fonts/licenses/<slug>.txt` plus a row in `src/fonts/LICENSES.md` (the test checks both).
    Only SIL OFL or Apache 2.0 fonts. They are inlined into the single-file build as `data:` URLs (no network, ever).
 
 ## How the log is made (how the ledger was checked against the code)
