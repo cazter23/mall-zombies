@@ -1006,6 +1006,9 @@ src/
                         light it), dummy.js practice mannequins (shootables; round, maxHealth, setRound, onHit),
                         gallery.js the SHOOTING GALLERY's numbers (createGallery: each hit's damage / part / distance / falloff, hit rate
                         by distance, a kill's hit shots and time, the round counter's two prompts; connected by createGame: arena.connect),
+                        backOfHouse.js the range's LOOK, the Staff Training Center (blockWallMaterial + worldUVs: concrete-block walls at
+                        1 m = 1 m; dressInterior: a ceiling and fluorescent strips over every room, safety stripes, cones, pallets; one
+                        instanced draw for the strips and each cone part; no lights),
                         movementCourse.js the course's new stations (buildMovementCourse: the vault row, the ramp to a 3 m landing and a
                         6.3 m balcony with balcony rails (`ledge`), the reach-rule blocks; COURSE holds their numbers),
                         moveTracker.js the movement readout's numbers (speed, the last jump / drop, fall damage via player.onFall, slide, vault),
@@ -1417,7 +1420,11 @@ src/
   window and the two selectors) marks the run assisted: no records.
 - Light: one lamp with a 50 m reach; the mall's two sky lights (config/environment.js hemisphere + fill) reach everywhere. The fill was
   the range's own sky light until 17 November 2026 (it lit the whole mall), so the mall looks the same with or without the range.
-- 60x60m open floor centered at (0, -100), far south of the mall, 2m border walls, 1m floor tiles.
+- 60x60m floor centered at (0, -100), far south of the mall, 1m floor tiles (sealed concrete). Since stage 5 (17 November 2026) it
+  is the mall's STAFF TRAINING CENTER (backOfHouse.js): block walls up to a 9.5 m ceiling (clear of your eyes on the 6.3 m balcony)
+  over the hall, the gallery and the pen, fluorescent strips, yellow safety stripes, cones, pallets; station headers are industrial
+  plates, the banner and wall notices wayfinding and handwritten signs (world/textures.js makeSignTexture styles), each sign's
+  canvas sized by its width.
 - Shooting range: 5 practice dummies (3 at local z=17 near spawn, 2 at (+-9, 0)) with round-1 zombie health.
 - Contents: runway with a line every 5m; slide bars + an 8m low tunnel (underside 1.2m: crouch fits,
   standing doesn't); pillars; jump boxes 0.3-1.2m (1.2 is deliberately unreachable); 0.6m platforms with 2/3/4/5m gaps for

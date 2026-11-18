@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 17 November 2026 - The test range becomes the Staff Training Center (`claude/test-range-5`, stage 5 of 5)
+
+The last stage of the test range plan: the grey box with 2 m walls under the open sky is now a back-of-house warehouse
+(maps/testRange/backOfHouse.js). Concrete-block walls run up to a 9.5 m ceiling over the hall, the gallery and the pen, with
+fluorescent strips (one instanced draw), yellow safety stripes at the walls' feet, cones and pallets; the floor is sealed concrete
+(its 1 m tiles kept for judging distances). The signs use the game's sign styles: industrial plates over each station, a wayfinding
+STAFF TRAINING CENTER banner and AUTHORIZED STAFF ONLY, and two deadpan handwritten notices. No lights were added. Found on the way:
+the gallery test's shots were random (the Rivet Rifle's spread) and only passed by luck; the new meshes moved the random sequence
+(the CLAUDE.md trap), so the test now fixes Math.random at 0 (dead centre) after the map is built.
+
 ## 17 November 2026 - The test range's movement course, brought up to date (`claude/test-range-4`, stage 4 of 5)
 
 The course dated from 12 October: its stairs had 0.5 m steps (no rule allows that now) and nothing showed vaulting, balcony rails,
