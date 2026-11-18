@@ -2,6 +2,25 @@
 
 Newest first, from 12 November 2026. Older: docs/archive/ (see the end of this file).
 
+## 17 November 2026 - Startup: the signs stop measuring their text a dozen times over (`claude/sign-text`)
+
+The game took 13-18 s from opening the page to the title's first frame (a production build in Chromium), with a blank page
+throughout. Measured with timing marks in a throwaway copy: fonts and code 0.3 s, the renderer and HUD 0.4 s, building the mall
+8.4-11.3 s, batching and the rest 0.6 s, then 2.1 s for the first title frame (43 shaders compiled, 146 textures uploaded) after a
+0.8 s wait. Of the mall's build, ~7 s was spent in the canvas's measureText, not building anything: typeKit's fitSize shrank
+each sign's text to fit by trying every size 2 px apart (~12,500 measurements for 1,123 signs), and the browser's first
+measurement at a font size it hasn't used costs ~2 ms (it sets up that size; below ~256 px). Painting itself was under 0.2 s.
+- **fitSize** now measures at the full size once, predicts the rung from it (width grows in proportion to size), then confirms
+  that rung fits and the one above doesn't: ~2.4 measurements a call instead of ~22. Same answer: on the real mall (all 1,123
+  calls run both ways) and in tests/typefaces.test.js (3,000 generated cases with widths not in proportion to size); the
+  context is left with the same font.
+- **Measured** (three page loads each, back to back): the title's first frame at 12.4 / 15.1 / 15.7 s before, 7.7 / 8.7 / 8.3 s
+  after; the blocking startup task 8.8 s -> 3.0 s.
+- **Not done (next candidates):** compile the title view's shaders in the background before its first frame (2.1 s of frozen page);
+  the 0.8 s before that frame starts (not traced); main.js is only requested after the fonts (~0.1 s); a loading screen instead
+  of a blank page. Measured in Chromium only: `npm run play` opens Firefox, whose numbers will differ (fewer measurements helps
+  in any browser).
+
 ## 17 November 2026 - The docs brought up to date and tidied (`claude/docs-cleanup`)
 
 An audit of every doc against the code. The numbers were mostly right (prices, door counts, coordinates, formulas, sounds); what had

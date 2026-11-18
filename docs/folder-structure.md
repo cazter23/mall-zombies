@@ -961,7 +961,8 @@ src/                    The game. Everything the browser loads starts at boot.js
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk); no image files. makeSignTexture draws
                         on a 1024-wide page scaled to pixelsWide (mapKit: signPixels); makeTileTexture is built once per look and handed out as clones.
                         seededRandom(seed).
-    typeKit.js          How text is set on canvas: fontFor(role, px), fitSize (shrink to fit, never clip), drawType (case, tracking, slant, outline, shadow,
+    typeKit.js          How text is set on canvas: fontFor(role, px), fitSize (shrink to fit, never clip: the largest rung of size, size - 2, ... that fits,
+                        found from ~2-3 measurements, as a measurement at a new size is slow), drawType (case, tracking, slant, outline, shadow,
                         glow, gradient from the role's treatment or options). Every sign, poster and label draws through it (docs/typefaces.md).
     wallBuy.js          createWallBuyDisplay(): chalk outline + the gun on two pegs, side on, merged into one mesh per material (wall buys aren't in the map
                         group the batcher sees).

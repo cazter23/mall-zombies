@@ -42,20 +42,41 @@ function widthOf(ctx, text) {
   return typeof m?.width === 'number' && !Number.isNaN(m.width) ? m.width : 0;
 }
 
-/** Largest size (stepping down 2 px from `size`) at which `text` set in `role` fits `maxWidth`; never smaller than `min`. */
+/**
+ * Largest size on the ladder `size`, `size - 2`, `size - 4`, ... (never below `min`, which is the last rung) at which `text` set
+ * in `role` fits `maxWidth`; `min` if none does.
+ * It measures a few rungs, not every one: text width grows in proportion to its size, so one measurement at `size` predicts
+ * the rung, which is then confirmed (it fits, and the rung above it doesn't). Stepping down every rung measured ~12,500 times
+ * at startup, and the browser's first measurement at a font size it has not used yet costs ~2 ms: ~7 s of the mall's build
+ * (docs/history.md, 17 November 2026). Same answer as the step-by-step walk (tests/typefaces.test.js compares them); the
+ * context is left with the returned size's font, as that walk left it.
+ */
 export function fitSize(ctx, text, role, size, maxWidth, { min = 6, tracking, caps, weight, italic } = {}) {
   const def = roleOf(role);
   const shown = applyCase(text, caps ?? def.caps);
   const em = tracking ?? def.tracking ?? 0;
-  let s = size;
-  for (;;) {
+  const widthAt = (s) => {
     ctx.font = fontFor(role, s, { weight, italic });
     setTracking(ctx, em, s);
     const w = widthOf(ctx, shown);
     clearTracking(ctx);
-    if (w <= maxWidth || s <= min) return s;
-    s = Math.max(min, s - 2);
-  }
+    return w;
+  };
+  const fullWidth = widthAt(size);
+  if (fullWidth <= maxWidth || size <= min) return size;
+  // The rungs, made the way the walk makes them (repeated "- 2", floored at min), so each is the very same number.
+  const rungs = [size];
+  while (rungs.at(-1) > min) rungs.push(Math.max(min, rungs.at(-1) - 2));
+  const last = rungs.length - 1;
+  // Predicted: the highest rung at or below the size that would just fit.
+  const target = (size * maxWidth) / fullWidth;
+  let i = rungs.findIndex((s) => s <= target);
+  if (i < 1) i = i === 0 ? 1 : last; // (rung 0 is known not to fit)
+  const fits = (k) => k === last || widthAt(rungs[k]) <= maxWidth; // (the last rung is returned whether it fits or not)
+  while (!fits(i)) i++; // too wide: down a rung
+  while (i > 1 && fits(i - 1)) i--; // the rung above fits too: up a rung
+  ctx.font = fontFor(role, rungs[i], { weight, italic }); // (a size already measured: cheap)
+  return rungs[i];
 }
 
 /**

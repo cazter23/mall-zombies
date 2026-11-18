@@ -90,6 +90,58 @@ function fakeCtx() {
   return ctx;
 }
 
+// fitSize as it was: try every rung of size, size - 2, ... down to min. The reference the fast one must agree with.
+function fitSizeByWalking(ctx, text, role, size, maxWidth, { min = 6, tracking, caps } = {}) {
+  const def = roleOf(role);
+  const shown = caps === 'upper' || (caps ?? def.caps) === 'upper' ? String(text).toUpperCase() : (caps ?? def.caps) === 'lower' ? String(text).toLowerCase() : String(text);
+  const em = tracking ?? def.tracking ?? 0;
+  let s = size;
+  for (;;) {
+    ctx.font = fontFor(role, s);
+    if (em) ctx.letterSpacing = `${(em * s).toFixed(2)}px`;
+    const w = ctx.measureText(shown).width;
+    ctx.letterSpacing = '0px';
+    if (w <= maxWidth || s <= min) return s;
+    s = Math.max(min, s - 2);
+  }
+}
+
+test('fitSize gives the same size as trying every rung, from a few measurements (startup: ~7 s of sign text)', () => {
+  // Widths that are NOT in proportion to the size (rounded advances per letter, a little less than linear, letter spacing),
+  // the way a real font's are not quite, so the prediction has to be corrected by the checks.
+  const shapes = [
+    (text, px, ls) => text.length * Math.round(px * 0.55 * 4) / 4 + ls * text.length,
+    (text, px, ls) => text.length * 0.6 * px ** 0.97 + ls * text.length + 3,
+    (text, px, ls) => [...text].reduce((w, ch) => w + Math.ceil(px * (0.35 + (ch.charCodeAt(0) % 7) / 20)), 0) + ls * text.length,
+  ];
+  const ctxFor = (shape) => {
+    const ctx = { font: '', letterSpacing: '0px', measures: 0,
+      measureText(text) { this.measures++; const px = parseFloat(/(\d+(?:\.\d+)?)px/.exec(this.font)[1]); return { width: shape(text, px, parseFloat(this.letterSpacing) || 0) }; } };
+    return ctx;
+  };
+  let seed = 7;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const words = ['SALE', 'GRAND ATRIUM', 'HOFFMAN\'S DEPARTMENT STORE', 'Everything must go!', 'NO REFUNDS', 'x', 'Sunset Cinema  Now Showing'];
+  const roleNames = ['hoffmanBrand', 'marker', 'clearance', 'digital', 'toyBody'].filter((r) => roles[r]);
+  let calls = 0, fastMeasures = 0, slowMeasures = 0;
+  for (let n = 0; n < 3000; n++) {
+    const shape = shapes[n % shapes.length];
+    const text = words[Math.floor(rand() * words.length)];
+    const role = roleNames[Math.floor(rand() * roleNames.length)];
+    const size = rand() < 0.3 ? Math.round(rand() * 500) / 10 + 4 : Math.round(8 + rand() * 300); // fractional sizes too
+    const maxWidth = rand() < 0.1 ? 1e6 : rand() * size * text.length * 0.7;
+    const opts = { min: rand() < 0.5 ? 6 : Math.round(2 + rand() * 20), tracking: rand() < 0.3 ? rand() * 0.2 : undefined };
+    const slow = ctxFor(shape), fast = ctxFor(shape);
+    const want = fitSizeByWalking(slow, text, role, size, maxWidth, opts);
+    const got = fitSize(fast, text, role, size, maxWidth, opts);
+    assert.equal(got, want, `"${text}" in ${role} from ${size} to fit ${maxWidth.toFixed(1)} (min ${opts.min}): walking gives ${want}`);
+    assert.equal(fast.font, slow.font, 'the context is left with the same font');
+    assert.equal(fast.letterSpacing, '0px', 'and no letter spacing');
+    calls++; fastMeasures += fast.measures; slowMeasures += slow.measures;
+  }
+  assert.ok(fastMeasures / calls < 3.5, `a few measurements a call (${(fastMeasures / calls).toFixed(2)}; walking took ${(slowMeasures / calls).toFixed(2)})`);
+});
+
 test('drawType draws in the role\'s family, shrinks to fit and never clips', () => {
   const ctx = fakeCtx();
   const size = drawType(ctx, 'HOFFMAN\'S DEPARTMENT STORE', 100, 20, { role: 'hoffmanBrand', size: 80, maxWidth: 300, fill: '#fff' });
