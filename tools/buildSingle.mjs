@@ -61,13 +61,25 @@ js = js.replace(/,void 0,import\.meta\.url\)/g, ',void 0)');
 
 const safe = (text) => text.replace(/<\/(script|style)/gi, '<\\/$1').replace(/<!--/g, '<\\!--'); // (a "</script" inside the code would end it early)
 
+// The font licences travel with the fonts: this file is shared on its own (a GitHub release), and both licences (SIL OFL 1.1,
+// Apache 2.0) want their text with every copy. src/fonts/LICENSES.md (the credits) and every family's full licence, as one HTML
+// comment at the end of the body (not in <head>: the charset must stay in the first 1,024 bytes).
+const licenceDir = 'src/fonts/licenses';
+const licenceParts = [
+  'FONT LICENCES. The fonts inlined in this file are free fonts under their own licences (not the game\'s MIT licence).',
+  readFileSync('src/fonts/LICENSES.md', 'utf8'),
+  ...readdirSync(licenceDir).filter((f) => f.endsWith('.txt')).sort().map((f) => `===== ${f.replace('.txt', '')} =====\n${readFileSync(join(licenceDir, f), 'utf8')}`),
+];
+const licences = licenceParts.join('\n\n').replace(/\r\n/g, '\n');
+if (/--!?>/.test(licences)) throw new Error('single build: a licence text contains "-->", which would end the comment early');
+
 let html = readFileSync(join(OUT, 'index.html'), 'utf8');
 html = html
   .replace(/<script[^>]*type="module"[^>]*src="[^"]*"[^>]*><\/script>\s*/i, '')
   .replace(/<link[^>]*rel="stylesheet"[^>]*href="\.\/assets\/[^"]*"[^>]*>\s*/i, '')
   .replace(/(<link[^>]*rel="icon"[^>]*href=")\.\/assets\/[^"]*"/i, (_, start) => `${start}data:image/png;base64,${readFileSync(iconPath).toString('base64')}"`)
   .replace('</head>', () => `    <style>${safe(css)}</style>\n  </head>`)
-  .replace('</body>', () => `    <script type="module">${safe(js)}</script>\n  </body>`);
+  .replace('</body>', () => `    <script type="module">${safe(js)}</script>\n<!--\n${licences}\n-->\n  </body>`);
 
 if (/src="\.?\/?assets\//.test(html) || /href="\.?\/?assets\//.test(html)) throw new Error('single build: a file reference was left in the html');
 mkdirSync(OUT, { recursive: true });

@@ -1,6 +1,7 @@
 // The single-file build (tools/buildSingle.mjs, `npm run build:single`): the whole game in ONE html file that opens by
 // double-clicking it. Builds it for real and checks it is self-contained: one inline module script and style, no file
-// references left, the music worker inlined as a Blob worker, and the only network thing is the (non-blocking) font link.
+// references left, the music worker inlined as a Blob worker, nothing loaded from the network (the fonts are inlined), and
+// the font licences carried inside it (it is shared on its own, as a GitHub release).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -30,5 +31,13 @@ test('npm run build:single writes one self-contained sunset-galleria.html', { ti
   assert.deepEqual(external, [], 'no link to a font host or anything else');
   assert.doesNotMatch(html, /fonts\.(googleapis|gstatic)\.com/);
   assert.ok((html.match(/url\(data:font\/woff2;base64,/g) ?? []).length >= 35, 'every bundled font face is inlined');
+  // ...and their licences travel with them (the file is shared on its own): the credits and every family's full text
+  const licences = html.match(/<!--\nFONT LICENCES\.([\s\S]*?)\n-->/)?.[1] ?? '';
+  for (const f of readdirSync('src/fonts/licenses')) {
+    assert.ok(licences.includes(`===== ${f.replace('.txt', '')} =====`), `the single file carries ${f}`);
+  }
+  assert.match(licences, /SIL OPEN FONT LICENSE Version 1\.1/i);
+  assert.match(licences, /Apache License\s+Version 2\.0/);
+  assert.ok(html.indexOf('<meta charset') < 1024, 'the charset stays in the first 1,024 bytes');
   assert.ok(existsSync('dist-single/sunset-galleria.html'));
 });
