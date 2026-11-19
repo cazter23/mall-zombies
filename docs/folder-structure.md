@@ -1077,7 +1077,9 @@ tools/                  Dev scripts and pages (never bundled into the game). The
   buildFontCss.mjs      `node tools/buildFontCss.mjs`: writes src/fonts/fonts.css from config/typefaces.js `families` (run it after adding a family).
   buildSingle.mjs       `npm run build:single`: a normal Vite build into dist-single/, then the JS, CSS, the tab icon (a data: URL), the bundled fonts (data:
                         URLs in the stylesheet) and the music worker (a Blob worker) pasted into ONE html file, dist-single/sunset-galleria.html: no server, no
-                        Node, no internet. tests/singleFile.test.js builds it and checks it is self-contained.
+                        Node, no internet. The font licences (src/fonts/LICENSES.md and every licences/*.txt) ride along as one HTML comment at the
+                        end of the body, as the file is shared on its own (a GitHub release). tests/singleFile.test.js builds it and
+                        checks it is self-contained and carries them.
   challengeReport.mjs   `npm run sim:challenges`: plays economyBot.js once per gun the bot can use (that gun bought early as its main gun), every challenge
                         target lifted in memory so the game's own counters show raw values: what a run to rounds 10/15/20 gives each challenge and so how many
                         runs it takes, what moved by accident, the bot's first death. Runs kept in scratch/challenge-report/.

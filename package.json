@@ -2,7 +2,7 @@
   "name": "mall-zombies",
   "private": true,
   "license": "MIT",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "test": "node tools/runTests.mjs",

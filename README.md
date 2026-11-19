@@ -42,7 +42,10 @@ Inspired by the round-based zombies modes of the *Call of Duty* series, with its
 
 ## Play it
 
-You need [Node.js](https://nodejs.org/) (version 20 or newer).
+**The easy way:** download `sunset-galleria.html` from the latest [release](https://github.com/cazter23/mall-zombies/releases/latest)
+and open it in a browser (Firefox or Chrome). It is the whole game in one file: no install, no server, no internet.
+
+**From the source:** you need [Node.js](https://nodejs.org/) (version 20 or newer).
 
 ```bash
 git clone https://github.com/cazter23/mall-zombies.git

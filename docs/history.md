@@ -2,6 +2,14 @@
 
 Newest first, from 12 November 2026. Older: docs/archive/ (see the end of this file).
 
+## 18 November 2026 - The first GitHub release: the game as one file, with its font licences inside (`claude/release`)
+
+A GitHub release hands `sunset-galleria.html` (`npm run build:single`) to people on its own, and both font licences (SIL OFL
+1.1, Apache 2.0) want their text with every copy. tools/buildSingle.mjs now puts src/fonts/LICENSES.md and every family's full
+licence into one HTML comment at the end of the body (+0.19 MB, 3.86 MB in all; not in <head>, where it would push the charset
+out of the first 1,024 bytes); tests/singleFile.test.js checks every family's text is there. Checked in the browser: the file
+opens to the title in standards mode, no console errors. The README's "Play it" now starts with the release download.
+
 ## 17 November 2026 - Startup: the title's first frame waits for its shaders (`claude/title-frame`)
 
 After the sign-text fix, the next stall: the title's first frame froze the page for ~2.1-2.5 s (a production build in Chromium).
